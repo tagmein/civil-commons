@@ -39,10 +39,14 @@ const _fs = globalThis.fs ?? {
 }
 const _path = globalThis.path ?? {
  dirname(p) {
-  return "/" + p.split("/").slice(0, -1).join("/")
+  return p.split("/").slice(0, -1).join("/")
  },
  join(a, b) {
-  return [a.replace(/^\//, ""), b.replace(/^\.\//, "")].join("/")
+  const result = [a.replace(/^\//, ""), b.replace(/^\.\//, "")].join("/")
+  if (a[0] === '/' && result[0] !== '.' && result[0] !== '/') {
+    return '/' + result
+  }
+  return result
  },
 }
 
@@ -351,6 +355,8 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
  let parseNext
  let lastComment
  let blockPrefix = ""
+ let nextBasePath
+ let currentBasePath
  function read(name, ...nameSegments) {
   let value = undefined
   let searchScope = names
@@ -480,10 +486,10 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    currentValue = currentError ? currentError?.message ?? String(currentError) : undefined
    return me
   },
-  clone(name) {
+  clone(name, nextBasePath) {
    const newNames = new Map()
    newNames.set(SCOPE.PARENT, names)
-   const newCrown = crown(currentValue, newNames, basePath)
+   const newCrown = crown(currentValue, newNames, nextBasePath ?? currentBasePath ?? basePath)
    if (typeof name === "string") {
     me.set_raw(name, newCrown)
    }
@@ -534,7 +540,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
   async false(instructionCrown) {
    if (instructionCrown) {
     if (!currentValue) {
-     await me.clone().walk(uncrown(instructionCrown))
+     await me.clone(undefined, currentBasePath ?? basePath).walk(uncrown(instructionCrown))
     }
    } else {
     currentValue = false
@@ -573,7 +579,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
   function(...argumentNames) {
    const functionImplementation = argumentNames.pop()
    currentValue = async function (...runtimeArguments) {
-    const scopeCrown = me.clone()
+    const scopeCrown = me.clone(undefined, currentBasePath ?? basePath)
     for (const index in argumentNames) {
      scopeCrown.set(argumentNames[index], runtimeArguments[index])
     }
@@ -620,7 +626,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
     throw new Error(`group command requires current value to be an Array, got ${typeof currentValue}`)
    }
    const groups = {}
-   const functionCrown = me.clone()
+   const functionCrown = me.clone(undefined, currentBasePath ?? basePath)
    await functionCrown.walk(groupByExpression)
    const itemGroupFunction = await uncrown(functionCrown)
    await Promise.all(
@@ -649,7 +655,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    if (Array.isArray(definition)) {
     for (const [v] of definition) {
      if (Array.isArray(v)) {
-      const scope = me.clone()
+      const scope = me.clone(undefined, currentBasePath ?? basePath)
       currentValue.push((await scope.walk(v)).current())
      } else {
       currentValue.push(v)
@@ -660,9 +666,10 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    }
    return me
   },
-  async load(_filePath, basePath = globalThis.basePath) {
+  async load(_filePath, basePathOverride = basePath ?? currentBasePath ?? globalThis.basePath) {
    const filePath = uncrown(_filePath)
-   const finalPath = _path.join(basePath, filePath)
+   const finalPath = _path.join(basePathOverride, filePath)
+   nextBasePath = _path.dirname(finalPath)
    const content = await _fs.readFile(finalPath, "utf-8")
    try {
     const fileModule = eval(`(
@@ -720,7 +727,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
      continue
     }
     if (Array.isArray(v)) {
-     const scope = me.clone()
+     const scope = me.clone(undefined, currentBasePath ?? basePath)
      currentValue[k] = (await scope.walk(v)).current()
     } else {
      currentValue[k] = v
@@ -730,7 +737,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
   },
   async pick(...x) {
    for (const [condition, ...block] of x) {
-    const conditionResult = uncrown(await me.clone().walk([condition]))
+    const conditionResult = uncrown(await me.clone(undefined, currentBasePath ?? basePath).walk([condition]))
     if (conditionResult) {
      await me.walk(block)
      break
@@ -742,7 +749,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    if (typeof currentValue !== "function") {
     throw new Error(`current value must be function, got ${typeof currentValue}`)
    }
-   const finalCrown = await currentValue(me.clone())
+   const finalCrown = await currentValue(me.clone(undefined, nextBasePath))
    currentValue = finalCrown.current()
    return me
   },
@@ -789,7 +796,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
   },
   async runFile(source, basePath = globalThis.basePath) {
    const filePath = basePath.length === 0 || source.startsWith("/") ? source : _path.join(basePath, source)
-   basePath = _path.dirname(filePath)
+   currentBasePath = basePath = _path.dirname(filePath)
    const contents = await _fs.readFile(filePath, "utf-8")
    return me.run([contents])
   },
@@ -898,7 +905,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
   async true(instructionCrown) {
    if (instructionCrown) {
     if (currentValue) {
-     await me.clone().walk(uncrown(instructionCrown))
+     await me.clone(undefined, currentBasePath ?? basePath).walk(uncrown(instructionCrown))
     }
    } else {
     currentValue = true
@@ -986,7 +993,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
        try: false,
       }[command] ?? true
      try {
-      const finalArguments = await Promise.all(args.map(async (x) => (automaticWalk && Array.isArray(x) ? uncrown(await me.clone().walk(x)) : x)))
+      const finalArguments = await Promise.all(args.map(async (x) => (automaticWalk && Array.isArray(x) ? uncrown(await me.clone(undefined, currentBasePath ?? basePath).walk(x)) : x)))
       try {
        await me[command](...finalArguments)
       } catch (e) {

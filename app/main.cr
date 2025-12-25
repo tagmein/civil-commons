@@ -6,20 +6,17 @@
 # window.addEventListener("hashchange", route)
 log Civil Commons
 
-set toolbarStyleTag [
- global document createElement, call style
+set components [ object ]
+list action-bar, each [
+ function x [
+  set [ get components ] [ get x ] [
+   load [ template ./components/%0.cr [ get x ] ], point
+  ]
+ ]
 ]
-set [ get toolbarStyleTag ] textContent '
- .toolbar {
-  background-color: #222226;
-  height: 50px;
- }
-'
-global document head appendChild, call [ get toolbarStyleTag ]
 
 set toolbar [
- global document createElement, call div
+ get components action-bar, call
 ]
-get toolbar classList add, call toolbar
 
-global document body appendChild, call [ get toolbar ]
+global document body appendChild, call [ get toolbar element ]

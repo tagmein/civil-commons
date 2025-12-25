@@ -1,5 +1,4 @@
-set fs [ global import, call fs/promises ]
-set http [ global import, call node:http ]
+set ( fs, http ) [ global import, call ( fs/promises, node:http ) ]
 
 set port [ global process env PORT, default 4567 ]
 
