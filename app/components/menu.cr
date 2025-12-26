@@ -1,40 +1,43 @@
-set action-bar-style-tag [
+set menu-style-tag [
  global document createElement, call style
 ]
 
-set action-bar-style-tag textContent '
-.action-bar {
+set menu-style-tag textContent '
+.menu {
  background-color: #222226;
  display: flex;
- height: 50px;
+ flex-direction: column;
+ min-height: 50px;
+ min-width: 100px;
+ position: absolute;
+ top: 100%;
+ left: 0;
 }
 
-.action-bar label {
- align-items: center;
+.menu label {
  border-right: 1px solid #80808020;
  box-shadow: inset 0 0 1px 0 #ffffff20;
  display: block;
- justify-content: center;
  line-height: 54px;
  padding: 0 8px;
- position: relative;
 }
 
-.action-bar label:hover {
+.menu label:hover {
  background-color: #80808040;
 }
 '
 
 global document head appendChild, call [
- get action-bar-style-tag
+ get menu-style-tag
 ]
 
 function [
  set component [ object ]
+ set component open false
  set component element [
   global document createElement, call div
  ]
- get component element classList add, call action-bar
+ get component element classList add, call menu
  set component add [
   function label on-click [
    set label-element [
@@ -42,15 +45,25 @@ function [
    ]
    set label-element textContent [ get label ]
    get on-click, true [
-    set item [ object [ element [ get label-element ] ] ]
     get label-element addEventListener, call click [
-     function event [
-      get on-click, call [ get item ] [ get event ]
-     ]
+     get on-click
     ]
    ]
    get component element appendChild, call [
     get label-element
+   ]
+  ]
+ ]
+ set component toggle [
+  function parent [
+   get component attached
+   true [
+    get parent element removeChild, call [ get component element ]
+    set component attached false
+   ]
+   false [
+    get parent element appendChild, call [ get component element ]
+    set component attached true
    ]
   ]
  ]
