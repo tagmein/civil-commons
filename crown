@@ -666,7 +666,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    }
    return me
   },
-  async load(_filePath, basePathOverride = basePath ?? currentBasePath ?? globalThis.basePath) {
+  async load(_filePath, basePathOverride = currentBasePath ?? basePath ?? globalThis.basePath) {
    const filePath = uncrown(_filePath)
    const finalPath = _path.join(basePathOverride, filePath)
    nextBasePath = _path.dirname(finalPath)
@@ -918,6 +918,9 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    const p = pathCrowns.map(uncrown)
    const name = p.pop()
    if (p.length) {
+    if (typeof p[0] === "string" || typeof p[0] === "number") {
+     p[0] = me.get(p[0])
+    }
     const context = uncrown(me.at(...p))
     if (context === "null") {
      throw new Error(`cannot unset property "${name}" of null`)

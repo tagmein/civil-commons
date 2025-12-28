@@ -18,6 +18,7 @@ tell '.action-bar label' [
   line-height 54px
   padding '0 12px'
   position relative
+  user-select none
  ]
 ]
 
@@ -33,6 +34,7 @@ function [
   global document createElement, call div
  ]
  get component element classList add, call action-bar
+ set last-toggle [ object ]
  set component add [
   function label on-click [
    set label-element [
@@ -43,7 +45,22 @@ function [
     set item [ object [ element [ get label-element ] ] ]
     get label-element addEventListener, call click [
      function event [
+      get last-toggle element, is [ get label-element ], false [
+       get last-toggle current, true [
+        get last-toggle current, call
+        unset last-toggle current
+       ] 
+       set last-toggle current [
+        function [
+         get on-click, call [ get item ] false
+        ]
+       ]
+       set last-toggle element [ get label-element ]
+      ], true [
+       unset last-toggle ( current, element )
+      ]
       get on-click, call [ get item ] [ get event ]
+     
      ]
     ]
    ]

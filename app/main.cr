@@ -4,7 +4,8 @@
 # }
 # route()
 # window.addEventListener("hashchange", route)
-log Civil Commons
+set version 0.0.0
+log Civil Commons [ get version ]
 
 set package [
  function name parts [
@@ -34,15 +35,4 @@ set components [
  ]
 ]
 
-set main-toolbar [
- get components action-bar, call
-]
-
-set commons [ get components menu, call ]
-get commons add, call About
-
-get main-toolbar add, call 'Civil Commons' [
- get commons toggle
-]
-
-global document body appendChild, call [ get main-toolbar element ]
+load ./interface/main-menu.cr, point

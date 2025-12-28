@@ -3,11 +3,14 @@ get lib style-tag
 tell .menu [
  object [
   background-color '#222226'
+  border-bottom-left-radius 8px
+  border-bottom-right-radius 8px
   display flex
   flex-direction column
   left 0
   min-height 50px
   min-width 100px
+  overflow hidden
   position absolute
   top 100%
  ]
@@ -20,6 +23,7 @@ tell '.menu label' [
   display block
   line-height 54px
   padding '0 12px'
+  white-space nowrap
  ]
 ]
 
