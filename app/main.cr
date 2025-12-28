@@ -6,24 +6,43 @@
 # window.addEventListener("hashchange", route)
 log Civil Commons
 
-set components [ object ]
-list action-bar menu, each [
- function x [
-  set components [ get x ] [
-   load [ template ./components/%0.cr [ get x ] ], point
+set package [
+ function name parts [
+  set bundle [ object ]
+  get parts, each [
+   function x [
+    set bundle [ get x ] [
+     load [ template ./%0/%1.cr [ get name ] [ get x ] ], point
+    ]
+   ]
   ]
+  get bundle
  ]
 ]
 
-set toolbar [
+set lib [
+ get package
+ call lib [
+  list style-tag
+ ]
+]
+
+set components [
+ get package
+ call components [
+  list action-bar menu
+ ]
+]
+
+set main-toolbar [
  get components action-bar, call
 ]
 
 set commons [ get components menu, call ]
 get commons add, call About
 
-get toolbar add, call 'Civil Commons' [
+get main-toolbar add, call 'Civil Commons' [
  get commons toggle
 ]
 
-global document body appendChild, call [ get toolbar element ]
+global document body appendChild, call [ get main-toolbar element ]

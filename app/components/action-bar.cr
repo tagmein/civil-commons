@@ -1,32 +1,30 @@
-set action-bar-style-tag [
- global document createElement, call style
+get lib style-tag
+
+tell .action-bar [
+ object [
+  background-color '#222226'
+  display flex
+  height 50px
+ ]
 ]
 
-set action-bar-style-tag textContent '
-.action-bar {
- background-color: #222226;
- display: flex;
- height: 50px;
-}
+tell '.action-bar label' [
+ object [
+  align-items center
+  border-right '1px solid #80808020'
+  box-shadow 'inset 0 0 1px 0 #ffffff20'
+  display block
+  justify-content center
+  line-height 54px
+  padding '0 12px'
+  position relative
+ ]
+]
 
-.action-bar label {
- align-items: center;
- border-right: 1px solid #80808020;
- box-shadow: inset 0 0 1px 0 #ffffff20;
- display: block;
- justify-content: center;
- line-height: 54px;
- padding: 0 8px;
- position: relative;
-}
-
-.action-bar label:hover {
- background-color: #80808040;
-}
-'
-
-global document head appendChild, call [
- get action-bar-style-tag
+tell '.action-bar label:hover' [
+ object [
+  background-color '#80808040'
+ ]
 ]
 
 function [

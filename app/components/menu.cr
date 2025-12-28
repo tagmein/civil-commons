@@ -1,34 +1,32 @@
-set menu-style-tag [
- global document createElement, call style
+get lib style-tag
+
+tell .menu [
+ object [
+  background-color '#222226'
+  display flex
+  flex-direction column
+  left 0
+  min-height 50px
+  min-width 100px
+  position absolute
+  top 100%
+ ]
 ]
 
-set menu-style-tag textContent '
-.menu {
- background-color: #222226;
- display: flex;
- flex-direction: column;
- min-height: 50px;
- min-width: 100px;
- position: absolute;
- top: 100%;
- left: 0;
-}
+tell '.menu label' [
+ object [
+  border-right '1px solid #80808020'
+  box-shadow 'inset 0 0 1px 0 #ffffff20'
+  display block
+  line-height 54px
+  padding '0 12px'
+ ]
+]
 
-.menu label {
- border-right: 1px solid #80808020;
- box-shadow: inset 0 0 1px 0 #ffffff20;
- display: block;
- line-height: 54px;
- padding: 0 8px;
-}
-
-.menu label:hover {
- background-color: #80808040;
-}
-'
-
-global document head appendChild, call [
- get menu-style-tag
+tell '.menu label:hover' [
+ object [
+  background-color '#80808040'
+ ]
 ]
 
 function [
