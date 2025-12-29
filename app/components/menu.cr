@@ -8,7 +8,7 @@ tell .menu [
   display flex
   flex-direction column
   left 0
-  min-height 50px
+  min-height 39px
   min-width 100px
   overflow hidden
   position absolute
@@ -21,7 +21,8 @@ tell '.menu label' [
   border-right '1px solid #80808020'
   box-shadow 'inset 0 0 1px 0 #ffffff20'
   display block
-  line-height 54px
+  height 39px
+  line-height 40px
   padding '0 12px'
   white-space nowrap
  ]

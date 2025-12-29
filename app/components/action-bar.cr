@@ -4,7 +4,7 @@ tell .action-bar [
  object [
   background-color '#222226'
   display flex
-  height 50px
+  height 39px
  ]
 ]
 
@@ -15,7 +15,7 @@ tell '.action-bar label' [
   box-shadow 'inset 0 0 1px 0 #ffffff20'
   display block
   justify-content center
-  line-height 54px
+  line-height 40px
   padding '0 12px'
   position relative
   user-select none
