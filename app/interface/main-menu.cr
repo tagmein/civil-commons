@@ -5,7 +5,11 @@ set main-toolbar [
 # Menu: Commons
 
 set commons [ get components menu, call ]
-get commons add, call About
+get commons add, call About [
+ function [
+  get dispatch, call commons:about
+ ]
+]
 
 get main-toolbar add, call 'Commons' [
  get commons toggle

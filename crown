@@ -21,7 +21,7 @@ setTimeout(function () {
     console.error(12, e.message)
     process.exit(1)
    }
-  })
+  }),
  ).catch(async (e) => {
   console.error(13, e.message)
   process.exit(1)
@@ -309,8 +309,8 @@ function extractMacroStatements(statement) {
  const result = expansions[0].map((_, i) =>
   applyExpansions(
    template,
-   expansions.map((e) => e?.[i])
-  )
+   expansions.map((e) => e?.[i]),
+  ),
  )
  // console.log(
  //   `Here I got ${expansions.length} expansions`,
@@ -419,6 +419,14 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    const argumentList = processCrownList(argumentListRaw)
    currentValue = argumentList.reduce((sum, x) => sum + x, typeof currentValue === "number" ? currentValue : 0)
   },
+  all(...argumentListRaw) {
+   const argumentList = processCrownList(argumentListRaw)
+   currentValue = argumentList.reduce((result, x) => result && x, true)
+  },
+  any(...argumentListRaw) {
+   const argumentList = processCrownList(argumentListRaw)
+   currentValue = argumentList.reduce((result, x) => result || x, false)
+  },
   at(...path) {
    let isFirstSegment = true
    for (const segment of path) {
@@ -483,7 +491,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    return me
   },
   current_error() {
-   currentValue = currentError ? currentError?.message ?? String(currentError) : undefined
+   currentValue = currentError ? (currentError?.message ?? String(currentError)) : undefined
    return me
   },
   clone(name, nextBasePath) {
@@ -557,7 +565,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
      if (await uncrown(await callback(x))) {
       filteredValue.push(x)
      }
-    })
+    }),
    )
    currentValue = filteredValue
    return me
@@ -636,7 +644,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
       groups[itemGroup] = []
      }
      groups[itemGroup].push(item)
-    })
+    }),
    )
    currentValue = groups
    return me

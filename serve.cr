@@ -36,7 +36,17 @@ set handler [
      at split, call '/* UNIFIED */ ', at 1
     ] application/javascript
    ] [
+    is /web.cr
+    get respond, call 200 [
+     get i, call ./web.cr ] text/plain
+   ] [
     do [ at startsWith, call /app ]
+    get respond, call 200 [
+     get i, call [
+     template '.%0' [ get request url ]
+    ] ] text/plain
+   ] [
+    do [ at startsWith, call /core ]
     get respond, call 200 [
      get i, call [
      template '.%0' [ get request url ]
