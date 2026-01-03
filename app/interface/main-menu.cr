@@ -7,7 +7,7 @@ set main-toolbar [
 set commons [ get components menu, call ]
 get commons add, call About [
  function [
-  get dispatch, call commons:about
+  get conductor dispatch, call commons:about
  ]
 ]
 

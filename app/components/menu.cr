@@ -13,6 +13,7 @@ tell .menu [
   overflow hidden
   position absolute
   top 100%
+  z-index 1
  ]
 ]
 

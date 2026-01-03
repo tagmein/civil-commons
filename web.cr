@@ -1,4 +1,4 @@
-set dispatch [
+set conductor [
  load ./core/conductor.cr, point
 ]
 set app [

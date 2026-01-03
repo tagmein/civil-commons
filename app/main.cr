@@ -13,7 +13,9 @@ set package [
   get parts, each [
    function x [
     set bundle [ get x ] [
-     load [ template ./%0/%1.cr [ get name ] [ get x ] ], point
+     load [
+      template ./%0/%1.cr [ get name ] [ get x ]
+     ], point
     ]
    ]
   ]
@@ -31,8 +33,14 @@ set lib [
 set components [
  get package
  call components [
-  list action-bar menu
+  list action-bar grid menu
  ]
 ]
 
-load ./interface/main-menu.cr, point
+list menu grid, each [
+ function x [
+  load [
+   template ./interface/main-%0.cr [ get x]
+  ], point
+ ]
+]

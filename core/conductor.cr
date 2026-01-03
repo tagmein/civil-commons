@@ -1,3 +1,9 @@
-function action [
- log DISPATCH ACTION [ get action ]
+set dispatch [
+ function action [
+  log DISPATCH ACTION [ get action ]
+ ]
+]
+
+object [
+ dispatch
 ]
