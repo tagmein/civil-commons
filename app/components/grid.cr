@@ -35,8 +35,31 @@ function [
  get component element appendChild
  tell [ get component backdrop ]
  tell [ get component content ]
+ set component backdrop-context [
+  get component backdrop getContext, call 2d
+ ]
 
  set grid-size 24
+
+ set draw-grid-halo [
+  function x y [
+   get component backdrop-context fillRect, call [
+    get x, multiply [ get grid-size ], subtract 1
+   ] [
+    get y, multiply [ get grid-size ], subtract 1
+   ] 3 3
+  ]
+ ]
+
+ set draw-grid-dot [
+  function x y [
+   get component backdrop-context fillRect, call [
+    get x, multiply [ get grid-size ]
+   ] [
+    get y, multiply [ get grid-size ]
+   ] 1 1
+  ]
+ ]
 
  set render [
   function [
@@ -50,7 +73,54 @@ function [
      get component height, divide [ get grid-size ] 
     ]
    ]
-   log [ get countX ] [ get countY ]
+
+   # Render grid halos
+   set component backdrop-context fillStyle '#80808080'
+   set y [ get countY, add 1 ]
+   get y
+   loop [
+     # Decrement Y
+     set y [ get y, subtract 1 ]
+     # Reset X for the new row
+     set x [ get countX, add 1 ]
+     get x
+     loop [
+       # Decrement X
+       set x [ get x, subtract 1 ]
+       # Draw the pixel
+       get draw-grid-halo, call [ get x ] [ get y ]
+       # Check if we should stop the X loop
+       get x
+       drop [ get x, is 0 ]
+     ]
+     # Check if we should stop the Y loop
+     get y
+     drop [ get y, is 0 ]
+   ]
+
+   # Render grid points
+   set component backdrop-context fillStyle '#808080'
+   set y [ get countY, add 1 ]
+   get y
+   loop [
+     # Decrement Y
+     set y [ get y, subtract 1 ]
+     # Reset X for the new row
+     set x [ get countX, add 1 ]
+     get x
+     loop [
+       # Decrement X
+       set x [ get x, subtract 1 ]
+       # Draw the pixel
+       get draw-grid-dot, call [ get x ] [ get y ]
+       # Check if we should stop the X loop
+       get x
+       drop [ get x, is 0 ]
+     ]
+     # Check if we should stop the Y loop
+     get y
+     drop [ get y, is 0 ]
+   ]
   ]
  ]
 

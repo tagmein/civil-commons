@@ -942,18 +942,26 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    }
    return me
   },
-  loop(newValue) {
+  async loop(...blockCrowns) {
    // loop a block as long as [ current ] is defined
-   console.log(newValue)
+   while (typeof currentValue !== "undefined") {
+    for (const b of blockCrowns) {
+     await me.walk(b)
+    }
+   }
   },
-  drop(newValue) {
+  drop(...conditionCrowns) {
    // set current to undefined if any block returns true (keep if all return false)
-   currentValue = newValue
+   if (conditionCrowns.map(uncrown).some((x) => x)) {
+    currentValue = undefined
+   }
    return me
   },
-  keep(newValue) {
+  keep(...conditionCrowns) {
    // set current to undefined if all blocks return false (keep if any return true)
-   currentValue = newValue
+   if (conditionCrowns.map(uncrown).every((x) => !x)) {
+    currentValue = undefined
+   }
    return me
   },
   value(newValue) {
@@ -1000,6 +1008,7 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
        function: false,
        group: false,
        list: false,
+       loop: false,
        object: false,
        pick: false,
        prepend: false,

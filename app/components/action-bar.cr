@@ -5,6 +5,7 @@ tell .action-bar [
   background-color '#222226'
   display flex
   height 39px
+  overflow visible
  ]
 ]
 
@@ -60,7 +61,6 @@ function [
        unset last-toggle ( current, element )
       ]
       get on-click, call [ get item ] [ get event ]
-     
      ]
     ]
    ]
