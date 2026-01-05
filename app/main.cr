@@ -37,7 +37,7 @@ set components [
  ]
 ]
 
-list menu grid, each [
+list menu tabs grid status, each [
  function x [
   load [
    template ./interface/main-%0.cr [ get x]
