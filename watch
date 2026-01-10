@@ -1,1 +1,87 @@
+#!/bin/bash
+
+TARGET_PORT=${PORT:-4567}
+
+# 1. Check dependency
+if ! command -v lsof &> /dev/null; then
+    echo "Error: 'lsof' is not installed."
+    exit 1
+fi
+
+# 2. Find the Child PID
+CHILD_PID=$(lsof -t -i :"$TARGET_PORT" -sTCP:LISTEN 2>/dev/null | head -n 1)
+
+if [ -n "$CHILD_PID" ]; then
+    
+    # Get Child Info
+    read -r CHILD_NAME CHILD_TIME <<< $(ps -p "$CHILD_PID" -o comm=,etime=)
+    
+    # 3. Find Parent PID
+    PARENT_PID=$(ps -p "$CHILD_PID" -o ppid= | xargs)
+    
+    # Logic to handle "No Parent" or "System Parent"
+    # If PPID is empty, 0 (kernel), or 1 (init/systemd), we treat it as standalone.
+    if [[ -z "$PARENT_PID" ]] || [[ "$PARENT_PID" -eq 0 ]] || [[ "$PARENT_PID" -eq 1 ]]; then
+        PARENT_NAME="System/Init"
+        IS_MANAGED=0
+    else
+        PARENT_NAME=$(ps -p "$PARENT_PID" -o comm=)
+        
+        # Check against common shells. If parent is a shell, it's not "managed" by a tool.
+        if [[ "$PARENT_NAME" =~ ^(bash|zsh|sh|fish|tcsh|dash|sshd|login|systemd|init|launchd|gnome-terminal|sudo)$ ]]; then
+            IS_MANAGED=0
+        else
+            IS_MANAGED=1
+        fi
+    fi
+
+    echo "------------------------------------------------"
+    echo "Port $TARGET_PORT is in use by: $CHILD_NAME (PID: $CHILD_PID)"
+    echo "Uptime: $CHILD_TIME"
+    
+    if [ "$IS_MANAGED" -eq 1 ]; then
+        echo "Manager Detected:     $PARENT_NAME (PID: $PARENT_PID)"
+        TARGET_PID=$PARENT_PID
+        TARGET_NAME=$PARENT_NAME
+        PROMPT_TYPE="Manager"
+    else
+        echo "Type:                 Standalone / Shell Child"
+        TARGET_PID=$CHILD_PID
+        TARGET_NAME=$CHILD_NAME
+        PROMPT_TYPE="Process"
+    fi
+    echo "------------------------------------------------"
+
+    # PM2 Safety Check
+    if [[ "$PARENT_NAME" == *"pm2"* ]]; then
+        echo "WARNING: PM2 detected. Killing the parent might stop ALL your apps."
+        echo "Recommendation: Press 'N' and run 'pm2 stop $CHILD_PID' manually."
+        echo ""
+    fi
+
+    # 4. Prompt
+    read -r -p "Terminate $PROMPT_TYPE <$TARGET_PID> ($TARGET_NAME)? (y/N) " response
+
+    case "$response" in
+        [yY][eE][sS]|[yY]) 
+            kill "$TARGET_PID"
+            echo "Terminating..."
+            sleep 1
+            
+            # Double check if port is clear
+            if lsof -t -i :"$TARGET_PORT" -sTCP:LISTEN >/dev/null; then
+                 echo "Port still busy. Attempting force kill on child..."
+                 kill -9 "$CHILD_PID" 2>/dev/null
+            else
+                 echo "Success. Port $TARGET_PORT is free."
+            fi
+            ;;
+        *)
+            exit 0
+            ;;
+    esac
+
+else
+    echo "Port $TARGET_PORT is free."
+fi
 nodemon -e cr,js ./crown serve.cr

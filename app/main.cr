@@ -33,14 +33,20 @@ set lib [
 set components [
  get package
  call components [
-  list action-bar grid menu
+  list action-bar stage menu
  ]
 ]
 
-list menu tabs grid status, each [
+set main [ object ]
+
+list tabs menu stage status, each [
  function x [
-  load [
-   template ./interface/main-%0.cr [ get x]
-  ], point
+  set main [ get x ] [
+   load [
+    template ./interface/main-%0.cr [ get x]
+   ], point
+  ]
  ]
 ]
+
+get main stage resize, tell
