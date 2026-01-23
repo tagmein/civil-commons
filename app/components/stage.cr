@@ -44,12 +44,32 @@ function [
  set component effects-context [
   get component effects getContext, call 2d
  ]
+ set component mouseX 0
+ set component mouseY 0
+
+ get component element addEventListener, call 'mousemove' [
+  function event [
+   set component mouseX [ get event offsetX ]
+   set component mouseY [ get event offsetY ]
+   get render, call
+  ]
+ ]
 
  set render [
   function [
     get component effects-context clearRect, tell 0 0 [ get component width ] [ get component height ]
-    set component effects-context fillStyle '#808080'
-    get component effects-context fillRect, tell 20 20 4 4
+
+    set component effects-context fillStyle '#00000040'
+    get component effects-context fillRect, tell 0 [ get component mouseY, subtract 2 ] [ get component width ] 5
+    get component effects-context fillRect, tell [ get component mouseX, subtract 2 ] 0 5 [ get component height ]
+
+    set component effects-context fillStyle '#40404040'
+    get component effects-context fillRect, tell 0 [ get component mouseY, subtract 1 ] [ get component width ] 3
+    get component effects-context fillRect, tell [ get component mouseX, subtract 1 ] 0 3 [ get component height ]
+
+    set component effects-context fillStyle '#60606060'
+    get component effects-context fillRect, tell 0 [ get component mouseY ] [ get component width ] 1
+    get component effects-context fillRect, tell [ get component mouseX ] 0 1 [ get component height ]
   ]
  ]
 

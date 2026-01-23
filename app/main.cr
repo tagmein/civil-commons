@@ -39,7 +39,7 @@ set components [
 
 set main [ object ]
 
-list tabs menu stage status, each [
+list tabs menu stage status startup, each [
  function x [
   set main [ get x ] [
    load [

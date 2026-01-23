@@ -35,11 +35,15 @@ tell '.menu label:hover' [
  ]
 ]
 
-function [
- set component [ object ]
- set component open false
- set component element [
-  global document createElement, call div
+function label [
+ set component [
+  object [
+   element [
+    global document createElement, call div
+   ]
+   label
+   open false
+  ]
  ]
  get component element classList add, call menu
  set component add [
