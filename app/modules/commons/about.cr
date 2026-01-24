@@ -1,5 +1,10 @@
 get conductor register, call commons:about [
  function [
-  log ABOUT OPEN IN MODULES COMMONS
+  set about-window [
+   get components window, call 'About Civil Commons'
+  ]
+  get main stage place-window, call [
+   get about-window
+  ]
  ]
 ]

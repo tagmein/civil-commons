@@ -33,7 +33,7 @@ set lib [
 set components [
  get package
  call components [
-  list action-bar stage menu
+  list action-bar stage menu window
  ]
 ]
 

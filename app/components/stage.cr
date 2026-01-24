@@ -4,6 +4,7 @@ tell .stage [
  object [
   flex-grow 1
   position relative
+  z-index 0
  ]
 ]
 
@@ -25,15 +26,51 @@ tell '.stage-effects, .stage-content' [
 ]
 
 function [
- set component [ object ]
- set component element [
-  global document createElement, call div
- ]
- set component effects [
-  global document createElement, call canvas
- ]
- set component content [
-  global document createElement, call div
+ set component [
+  object [
+   element [
+    global document createElement, call div
+   ]
+   effects [
+    global document createElement, call canvas
+   ]
+   content [
+    global document createElement, call div
+   ]
+   place-next [
+    object [
+     x 0
+     y 0
+    ]
+   ]
+   place-advance [
+    function [
+     set [ get component ] place-next x [
+      get component place-next x, add 20
+     ]
+     set [ get component ] place-next y [
+      get component place-next y, add 20
+     ]
+    ]
+   ]
+   place-window [
+    function window [
+     get component place-advance, tell
+     get component content appendChild, tell [
+      get window element
+     ]
+     set [ get window ] position [
+      object [
+       x [ get component place-next x ]
+       y [ get component place-next y ]
+      ]
+     ]
+     set [ get window ] element style transform [
+      template 'translate(%0px, %1px)' [ get window position x ]  [ get window position y ]
+     ]
+    ]
+   ]
+  ]
  ]
  get component element classList add, call stage
  get component effects classList add, call stage-effects
