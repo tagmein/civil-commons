@@ -166,6 +166,7 @@ function title height width [
     ]
    ]
    maximized false
+   minimized false
    is-resizing false
    is-dragging false
   ]
@@ -211,12 +212,62 @@ function title height width [
    get component element parentNode, true [
     get component element parentNode removeChild, call [ get component element ]
    ]
+   get component status-item, true [
+    get component status-bar remove, call [ get component status-item ]
+   ]
+   unset component status-item
+   unset component status-item-element
+  ]
+ ]
+ set minimize-window [
+  function [
+   get component status-bar, true [
+    get component element parentNode, true [
+     get component element parentNode removeChild, call [ get component element ]
+    ]
+    set component minimized true
+    set status-item [
+     get component status-bar add, call [ get component title ] [ get restore-window ]
+    ]
+    set component status-item [ get status-item ]
+    set component status-item-element [ get status-item element ]
+   ]
+  ]
+ ]
+ set restore-window [
+  function [
+   get component minimized, true [
+    get component status-item, true [
+     get component status-bar remove, call [ get component status-item ]
+    ]
+    set component minimized false
+    unset component status-item
+    unset component status-item-element
+    get component stage, true [
+     get component stage content appendChild, tell [
+      get component element
+     ]
+     get component position, true [
+      set [ get component ] element style transform [
+       template 'translate(%0px, %1px)' [ get component position x ] [ get component position y ]
+      ]
+     ]
+     get component maximized, false [
+      set [ get component ] element style width [
+       template %0px [ get component width ]
+      ]
+      set [ get component ] element style height [
+       template %0px [ get component height ]
+      ]
+     ]
+    ]
+   ]
   ]
  ]
  set component title-buttons [
   get components window-title-buttons, call [
    function [
-    # minimize - do nothing for now
+    get minimize-window, tell
    ]
   ] [
    function [

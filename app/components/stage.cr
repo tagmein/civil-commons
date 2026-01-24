@@ -54,7 +54,7 @@ function [
     ]
    ]
    place-window [
-    function window [
+    function window status [
      get component place-advance, tell
      get component content appendChild, tell [
       get window element
@@ -67,6 +67,10 @@ function [
      ]
      set [ get window ] element style transform [
       template 'translate(%0px, %1px)' [ get window position x ]  [ get window position y ]
+     ]
+     get status, true [
+      set [ get window ] status-bar [ get status ]
+      set [ get window ] stage [ get component ]
      ]
     ]
    ]

@@ -42,8 +42,8 @@ function [
     global document createElement, call label
    ]
    set label-element textContent [ get label ]
+   set item [ object [ element [ get label-element ] ] ]
    get on-click, true [
-    set item [ object [ element [ get label-element ] ] ]
     get label-element addEventListener, call click [
      function event [
       get last-toggle element, is [ get label-element ], false [
@@ -64,6 +64,18 @@ function [
    ]
    get component element appendChild, call [
     get label-element
+   ]
+   get item
+  ]
+ ]
+ set component remove [
+  function item [
+   get item element, true [
+    get last-toggle element, is [ get item element ], true [
+     unset last-toggle current
+     unset last-toggle element
+    ]
+    get component element removeChild, call [ get item element ]
    ]
   ]
  ]

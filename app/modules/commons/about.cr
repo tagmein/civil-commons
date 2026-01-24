@@ -113,7 +113,7 @@ get conductor register, call commons:about [
   set license-text [
    global document createElement, call p
   ]
-  set license-text textContent 'MIT License - Copyright (c) 2025 Nate Ferrero'
+  set license-text textContent 'MIT License + Public Domain'
   set license-text style margin '0'
   set license-text style color '#808080'
   set license-text style fontSize '14px'
@@ -122,6 +122,6 @@ get conductor register, call commons:about [
   get about-window fill, call [ get content ]
   get main stage place-window, call [
    get about-window
-  ]
+  ] [ get main status ]
  ]
 ]

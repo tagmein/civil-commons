@@ -5,6 +5,6 @@ get conductor register, call log:open [
   ]
   get main stage place-window, call [
    get log-window
-  ]
+  ] [ get main status ]
  ]
 ]
