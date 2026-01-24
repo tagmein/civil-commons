@@ -17,7 +17,7 @@ tell '.action-bar label' [
   display block
   justify-content center
   line-height 35px
-  padding '0 12px'
+  padding '0 10px'
   position relative
   user-select none
  ]

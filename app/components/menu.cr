@@ -24,7 +24,7 @@ tell '.menu label' [
   display block
   height 34px
   line-height 35px
-  padding '0 12px'
+  padding '0 10px'
   white-space nowrap
  ]
 ]

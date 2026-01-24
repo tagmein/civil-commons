@@ -6,6 +6,48 @@ set i [ function x [
  get fs readFile, call [ get x ]
 ] ]
 
+set get-mime-type [
+ function path [
+  get path, pick [
+   value [ at endsWith, call .svg ]
+   value 'image/svg+xml'
+  ] [
+   value [ at endsWith, call .html ]
+   value 'text/html'
+  ] [
+   value [ at endsWith, call .css ]
+   value 'text/css'
+  ] [
+   value [ at endsWith, call .js ]
+   value 'application/javascript'
+  ] [
+   value [ at endsWith, call .json ]
+   value 'application/json'
+  ] [
+   value [ at endsWith, call .png ]
+   value 'image/png'
+  ] [
+   value [ at endsWith, call .jpg ]
+   value 'image/jpeg'
+  ] [
+   value [ at endsWith, call .jpeg ]
+   value 'image/jpeg'
+  ] [
+   value [ at endsWith, call .gif ]
+   value 'image/gif'
+  ] [
+   value [ at endsWith, call .ico ]
+   value 'image/x-icon'
+  ] [
+   value [ at endsWith, call .cr ]
+   value 'text/plain'
+  ] [
+   true
+   value 'application/octet-stream'
+  ]
+ ]
+]
+
 set handler [
  function request response [
   set respond [
@@ -40,17 +82,27 @@ set handler [
     get respond, call 200 [
      get i, call ./web.cr ] text/plain
    ] [
-    do [ at startsWith, call /app ]
-    get respond, call 200 [
-     get i, call [
+    value [ at startsWith, call /app ]
+    set file-path [
      template '.%0' [ get request url ]
-    ] ] text/plain
+    ]
+    set mime-type [
+     get get-mime-type, call [ get file-path ]
+    ]
+    get respond, call 200 [
+     get i, call [ get file-path ]
+    ] [ get mime-type ]
    ] [
-    do [ at startsWith, call /core ]
-    get respond, call 200 [
-     get i, call [
+    value [ at startsWith, call /core ]
+    set file-path [
      template '.%0' [ get request url ]
-    ] ] text/plain
+    ]
+    set mime-type [
+     get get-mime-type, call [ get file-path ]
+    ]
+    get respond, call 200 [
+     get i, call [ get file-path ]
+    ] [ get mime-type ]
    ] [
     true 
     get respond, call 404 [ object [ error 'Not Found' ] ]
