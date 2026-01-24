@@ -86,8 +86,15 @@ function [
 
  get component element addEventListener, call 'mousemove' [
   function event [
-   set component mouseX [ get event offsetX ]
-   set component mouseY [ get event offsetY ]
+   set stage-rect [
+    get component element getBoundingClientRect, call
+   ]
+   set component mouseX [
+    get event clientX, subtract [ get stage-rect left ]
+   ]
+   set component mouseY [
+    get event clientY, subtract [ get stage-rect top ]
+   ]
    get render, call
   ]
  ]

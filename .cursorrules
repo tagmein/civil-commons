@@ -1,0 +1,199 @@
+# Crown Metaprogramming Language & Civil Commons Project Guide
+
+## Crown Syntax Basics
+
+### Syntax Characters (10 total)
+- `⏎` (newline) - separates statements
+- `,` (comma) - separates statements, equivalent to newline
+- `[` `]` - opens/closes a block
+- `(` `)` - opens/closes an expansion group
+- `*` - expands a list into individual items
+- `'` - opens/closes a string literal
+- `\` - escape character (use `\\` for literal `\`)
+- `#` - marks rest of line as comment
+
+### Keywords (4 total)
+- `null` - null value
+- `undefined` - undefined value
+- `true` - boolean true
+- `false` - boolean false
+
+### Important Commands
+- `get` - retrieves a value from scope
+- `set` - sets a value in scope
+- `call` - invokes a function, updates focus to return value
+- `tell` - invokes a function but retains current function/value in focus (ignores return value)
+- `value` - evaluates expression and returns value (use in conditions)
+- `do` - executes code for side effects, discards return value (doesn't affect current)
+- `point` - invokes loaded module with scope as argument, returns result
+
+### Crown's Implicit Current Value
+- Crown maintains an implicit "current value" or "focus" that commands operate on
+- `tell` refers to the current function/value and calls it, but keeps it in focus
+- `call` invokes the current function/value and updates focus to the return value
+
+## Critical Crown Patterns
+
+### Loading Libraries
+- **ALWAYS** load `get lib style-tag` before using `tell` commands for styling (e.g., `tell .window [ object [...] ]`)
+- The `tell` command calls the current function (from style-tag) to create CSS rules
+- **NEVER** load `get lib svg-icon` at top level if `tell` commands follow - use inline instead
+- Use `get lib svg-icon, call /path/to/icon.svg` inline where needed
+- `tell` works with any function - it calls the current function/value and ignores the return value
+
+### Setting Properties
+- Use `set` for setting properties: `set element style property value`
+- Use `set` for textContent: `set element textContent 'text'`
+- Use `set` for style properties: `set element style display none` (no quotes unless value contains `#`, `'`, or space)
+- **NOT** `get element style property, set 'value'` - this is incorrect syntax
+
+### Function Calls
+- Call stored functions: `get function-name, call args`
+- Call lib functions: `get lib function-name, call args`
+- When calling from lib: `get lib svg-icon, call path` (not `get get lib svg-icon`)
+
+### Global Access
+- **NEVER** use `get global` - `global` on its own is a get variant
+- Use `global document` NOT `get global document`
+- Use `global fetch` NOT `get global fetch`
+- **NEVER** use `global console log` - use the built-in `log` command instead
+
+### Logging
+- Use the built-in `log` command instead of `global console log`
+- Example: `log [ get event ]` NOT `global console log, call [ get event ]`
+- The `log` command evaluates the execution block and logs the result
+
+### Comparison Operators
+- Comparison operators (`=`, `<`, `>`, `<=`, `>=`, `is`) are **commands** in Crown
+- Commands must appear after a newline, comma, or start of a block
+- **NEVER** use word-based comparisons like `less`, `greater`, `equal`, etc.
+- **Exception**: `is` and `=` are interchangeable for equality - use whichever is cleaner, more readable, or more appropriate in context
+- Syntax: `get value, < 100` NOT `get value < 100` (comma required before comparison operator)
+- Examples:
+  - `get new-width, < 100` - less than
+  - `get new-width, > 100` - greater than
+  - `get new-width, <= 100` - less than or equal
+  - `get new-width, >= 100` - greater than or equal
+  - `get value, = 100` or `get value, is 100` - equal to (both are valid)
+  - `get element, is [ get target ]` - equality check (often more readable than `=`)
+- Can be used in conditionals: `get new-width, < 100, true [ set new-width 100 ]`
+
+### Conditionals in `pick`
+- Use `value [ condition ]` NOT `do [ condition ]` in pick statements
+- `value` returns the evaluated result, `do` discards it
+- Example: `value [ at endsWith, call .svg ]` not `do [ at endsWith, call .svg ]`
+
+### Promises
+- Crown automatically awaits promises - no need for `.then()`
+- Use direct assignment: `set response [ global fetch, call path ]`
+- Then use: `set text [ get response text, call ]`
+
+### Creating Instances
+- Use `new` command: `global DOMParser, new` (comma separates statements)
+- `new` uses current value as constructor
+
+### Style Property Setting
+- Set individual properties: `set element style fontSize '24px'`
+- Set multiple properties separately, not as object
+- Quote values only if they contain `#`, `'`, or spaces
+
+## Project Structure
+
+### Components (`app/components/`)
+- Components return objects with `element` property
+- Register in `app/main.cr` in components list
+- Pattern: Create DOM elements, add classes, set up event listeners, return component object
+
+### Libraries (`app/lib/`)
+- Shared utilities loaded via `get lib name`
+- Register in `app/main.cr` in lib list
+- Examples: `style-tag`, `svg-icon`
+
+### Modules (`app/modules/`)
+- Feature modules that register with conductor
+- Pattern: `get conductor register, call action-name [ function [...] ]`
+
+### Window Component Pattern
+- Create with: `get components window, call title height width`
+- Fill content with: `get window fill, call [ content-element ]`
+- Window has: `element`, `title-bar`, `content`, `title-buttons` (from window-title-buttons component)
+- Close window: removes element from parentNode
+
+### Stage Component Pattern
+- Windows placed via: `get main stage place-window, call [ window ]`
+- Stage sets window `position` object with `x` and `y`
+- Stage sets window `transform` style based on position
+
+## Common Patterns
+
+### Creating DOM Elements
+```
+set element [ global document createElement, call div ]
+get element classList add, call className
+set element textContent 'text'
+get parent appendChild, call [ get element ]
+```
+
+### Setting Styles
+```
+set element style display flex
+set element style color '#e0e0d0'
+set element style margin '0 0 20px 0'
+```
+
+### Event Listeners
+```
+get element addEventListener, tell click [
+ function event [
+  # handler code
+ ]
+]
+```
+
+### Component Structure
+```
+function param1 param2 [
+ set component [
+  object [
+   element [ global document createElement, call div ]
+   # other properties
+  ]
+ ]
+ # setup code
+ get component
+]
+```
+
+### Loading and Using Components
+```
+set my-component [ get components component-name, call arg1 arg2 ]
+get my-component element  # access the DOM element
+get my-component method-name, call args  # call component methods
+```
+
+## File Serving (`serve.cr`)
+
+- Routes starting with `/app` serve files with MIME type detection
+- Routes starting with `/core` serve files with MIME type detection
+- Use `get-mime-type` function to determine Content-Type based on file extension
+- SVG files served as `image/svg+xml`
+
+## Window Maximize/Restore
+
+- When maximizing: save current `transform`, `width`, `height` styles, then clear them
+- When restoring: restore from `component.position`, `component.width`, `component.height`
+- Toggle button visibility: `set component title-buttons maximize-button style display flex/none`
+
+## Best Practices
+
+1. **Always** load `get lib style-tag` before `tell` commands
+2. **Never** load libs at top level if they interfere with subsequent `tell` commands
+3. Use `set` for property assignment, not `get ... set`
+4. Use `value` in `pick` conditions, not `do`
+5. Promises are auto-awaited - use direct assignment
+6. Quote style values only when necessary (contains `#`, `'`, or space)
+7. Use `get lib function-name, call args` for lib functions (not `get get lib`)
+8. Component methods should be called via `get component method-name, call args`
+9. **Never** use `get global` - use `global` directly (e.g., `global document`, `global fetch`)
+10. **Never** use `global console log` - use the built-in `log` command instead (e.g., `log [ get event ]`)
+11. **Never** use word-based comparisons (`less`, `greater`, `equal`) - use operators (`<`, `>`, `=`, `<=`, `>=`) instead

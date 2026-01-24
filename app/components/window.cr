@@ -20,8 +20,10 @@ tell .window-title-bar [
  object [
   background-color '#111114'
   border-bottom '1px solid #333337'
+  cursor move
   display flex
   flex-direction row
+  flex-shrink 0
   height 34px
   line-height 35px
   overflow hidden
@@ -36,52 +38,16 @@ tell .window-title-bar-title [
   flex-grow 1
   overflow hidden
   text-overflow ellipsis
+  user-select none
   white-space nowrap
  ]
 ]
 
-tell .window-title-bar-buttons [
- object [
-  align-items center
-  display flex
-  flex-direction row
-  gap 4px
- ]
-]
-
-tell '.window-title-bar-button' [
- object [
-  align-items center
-  background-color transparent
-  border none
-  cursor pointer
-  display flex
-  height 20px
-  justify-content center
-  padding 0
-  width 20px
- ]
-]
-
-tell '.window-title-bar-button:hover' [
- object [
-  background-color '#80808040'
- ]
-]
-
-tell '.window-title-bar-button svg' [
+tell .window-content [
  object [
   color '#e0e0d0'
-  height 12px
-  width 12px
- ]
-]
-
-tell '.window-title-bar-button > div' [
- object [
-  display flex
-  align-items center
-  justify-content center
+  flex-grow 1
+  overflow auto
  ]
 ]
 
@@ -92,6 +58,62 @@ tell .window.maximized [
   left 0
   top 0
   width 100%
+ ]
+]
+
+tell .window-resize-handle [
+ object [
+  bottom 0
+  cursor nwse-resize
+  display none
+  height 16px
+  position absolute
+  right 0
+  width 16px
+  z-index 10
+ ]
+]
+
+tell '.window:hover .window-resize-handle' [
+ object [
+  display block
+ ]
+]
+
+tell '.window.maximized .window-resize-handle' [
+ object [
+  display none
+ ]
+]
+
+tell '.window-resize-handle svg' [
+ object [
+  color '#e0e0d0'
+  height 12px
+  opacity 0.6
+  position absolute
+  right 2px
+  bottom 2px
+  width 12px
+ ]
+]
+
+tell '.window-resize-handle:hover svg' [
+ object [
+  opacity 1
+ ]
+]
+
+tell .window-resize-overlay [
+ object [
+  background-color transparent
+  cursor nwse-resize
+  height 100vh
+  left 0
+  position fixed
+  top 0
+  width 100vw
+  z-index 999999
  ]
 ]
 
@@ -121,63 +143,47 @@ function title height width [
    title-text [
     global document createElement, call div
    ]
-   title-buttons [
+   content [
     global document createElement, call div
    ]
-   minimize-button [
-    global document createElement, call button
-   ]
-   maximize-button [
-    global document createElement, call button
-   ]
-   restore-button [
-    global document createElement, call button
-   ]
-   close-button [
-    global document createElement, call button
+   resize-handle [
+    global document createElement, call div
    ]
    title
    open false
-   height [ get height, default 300 ]
-   width [ get width, default 500 ]
+   height [
+    global Math max, call [
+     get height, default 300
+    ] [
+     value 100
+    ]
+   ]
+   width [
+    global Math max, call [
+     get width, default 500
+    ] [
+     value 150
+    ]
+   ]
    maximized false
+   is-resizing false
+   is-dragging false
   ]
  ]
  get component element classList add, call window
  get component title-bar classList add, call window-title-bar
  get component title-text classList add, call window-title-bar-title
- get component title-buttons classList add, call window-title-bar-buttons
- get component minimize-button classList add, call window-title-bar-button
- get component maximize-button classList add, call window-title-bar-button
- get component restore-button classList add, call window-title-bar-button
- get component close-button classList add, call window-title-bar-button
+ get component content classList add, call window-content
+ get component resize-handle classList add, call window-resize-handle
  set component title-text textContent [ get title, default 'Untitled' ]
  get component title-bar appendChild, tell [ get component title-text ]
- get component title-bar appendChild, tell [ get component title-buttons ]
- get component minimize-button appendChild, tell [
-  get lib svg-icon, call /app/icons/minimize.svg
- ]
- get component maximize-button appendChild, tell [
-  get lib svg-icon, call /app/icons/maximize.svg
- ]
- get component restore-button appendChild, tell [
-  get lib svg-icon, call /app/icons/restore.svg
- ]
- set component restore-button style display none
- get component close-button appendChild, tell [
-  get lib svg-icon, call /app/icons/close.svg
- ]
- get component title-buttons appendChild, tell [ get component minimize-button ]
- get component title-buttons appendChild, tell [ get component maximize-button ]
- get component title-buttons appendChild, tell [ get component restore-button ]
- get component title-buttons appendChild, tell [ get component close-button ]
  set toggle-maximize [
   function [
    get component maximized, true [
     get component element classList remove, call maximized
     set component maximized false
-    set component maximize-button style display flex
-    set component restore-button style display none
+    set component title-buttons maximize-button style display flex
+    set component title-buttons restore-button style display none
     get component position, true [
      set [ get component ] element style transform [
       template 'translate(%0px, %1px)' [ get component position x ] [ get component position y ]
@@ -192,27 +198,50 @@ function title height width [
    ], false [
     get component element classList add, call maximized
     set component maximized true
-    set component maximize-button style display none
-    set component restore-button style display flex
+    set component title-buttons maximize-button style display none
+    set component title-buttons restore-button style display flex
     set [ get component ] element style transform ''
     set [ get component ] element style width ''
     set [ get component ] element style height ''
    ]
   ]
  ]
- get component maximize-button addEventListener, tell click [
-  function event [
-   get event stopPropagation, tell
-   get toggle-maximize, tell
+ set close-window [
+  function [
+   get component element parentNode, true [
+    get component element parentNode removeChild, call [ get component element ]
+   ]
   ]
  ]
- get component restore-button addEventListener, tell click [
-  function event [
-   get event stopPropagation, tell
-   get toggle-maximize, tell
+ set component title-buttons [
+  get components window-title-buttons, call [
+   function [
+    # minimize - do nothing for now
+   ]
+  ] [
+   function [
+    # maximize
+    get toggle-maximize, tell
+   ]
+  ] [
+   function [
+    # restore
+    get toggle-maximize, tell
+   ]
+  ] [
+   function [
+    # close
+    get close-window, tell
+   ]
   ]
+ ]
+ get component title-bar appendChild, tell [ get component title-buttons element ]
+ get component resize-handle appendChild, tell [
+  get lib svg-icon, call /app/icons/resize.svg
  ]
  get component element appendChild, tell [ get component title-bar ]
+ get component element appendChild, tell [ get component content ]
+ get component element appendChild, tell [ get component resize-handle ]
  set raise-window [
   function [
    set [ get component ] element style z-index [
@@ -223,12 +252,182 @@ function title height width [
  get component element addEventListener, tell click [
   get raise-window
  ]
+ set start-drag [
+  function event [
+   get component maximized, false [
+    set component is-dragging true
+    get raise-window, tell
+    get component position, false [
+     set component position [
+      object [
+       x 0
+       y 0
+      ]
+     ]
+    ]
+    set component drag-start-x [ get event clientX ]
+    set component drag-start-y [ get event clientY ]
+    set component drag-start-position-x [ get component position x ]
+    set component drag-start-position-y [ get component position y ]
+    set handle-drag-mousemove [
+     function event [
+      get component is-dragging, true [
+       set delta-x [ get event clientX, subtract [ get component drag-start-x ] ]
+       set delta-y [ get event clientY, subtract [ get component drag-start-y ] ]
+       set new-x [ get component drag-start-position-x, add [ get delta-x ] ]
+       set new-y [ get component drag-start-position-y, add [ get delta-y ] ]
+       set component position [
+        object [
+         x [ get new-x ]
+         y [ get new-y ]
+        ]
+       ]
+       set [ get component ] element style transform [
+        template 'translate(%0px, %1px)' [ get component position x ] [ get component position y ]
+       ]
+      ]
+     ]
+    ]
+    set handle-drag-mouseup [
+     function event [
+      set component is-dragging false
+      global document removeEventListener, tell mousemove [ get handle-drag-mousemove ]
+      global document removeEventListener, tell mouseup [ get handle-drag-mouseup ]
+     ]
+    ]
+    global document addEventListener, tell mousemove [ get handle-drag-mousemove ]
+    global document addEventListener, tell mouseup [ get handle-drag-mouseup ]
+   ]
+  ]
+ ]
+ get component title-bar addEventListener, tell mousedown [
+  get start-drag
+ ]
+ set start-resize [
+  function event [
+   log [ get event ]
+   get event stopPropagation, tell
+   get event preventDefault, tell
+   set component start-x [ get event clientX ]
+   set component start-y [ get event clientY ]
+   set component start-width [ get component width ]
+   set component start-height [ get component height ]
+   set component is-resizing true
+   set handle-mousemove [
+    function event [
+     get component is-resizing, true [
+      set delta-x [ get event clientX, subtract [ get component start-x ] ]
+      set delta-y [ get event clientY, subtract [ get component start-y ] ]
+      set new-width [
+       global Math max, call [
+        get component start-width, add [ get delta-x ]
+       ] [
+        value 150
+       ]
+      ]
+      set new-height [
+       global Math max, call [
+        get component start-height, add [ get delta-y ]
+       ] [
+        value 100
+       ]
+      ]
+      set component width [ get new-width ]
+      set component height [ get new-height ]
+      get component maximized, false [
+       set [ get component ] element style width [
+        template %0px [ get component width ]
+       ]
+       set [ get component ] element style height [
+        template %0px [ get component height ]
+       ]
+      ]
+     ]
+    ]
+   ]
+   set handle-mouseup [
+    function event [
+     set component is-resizing false
+     global document removeEventListener, tell mousemove [ get handle-mousemove ]
+     global document removeEventListener, tell mouseup [ get handle-mouseup ]
+    ]
+   ]
+   global document addEventListener, tell mousemove [ get handle-mousemove ]
+   global document addEventListener, tell mouseup [ get handle-mouseup ]
+  ]
+ ]
+get component resize-handle addEventListener, tell mousedown [
+  function event [
+   log [ get event ]
+   get event stopPropagation, tell
+   get event preventDefault, tell
+   set component start-x [ get event clientX ]
+   set component start-y [ get event clientY ]
+   set component start-width [ get component width ]
+   set component start-height [ get component height ]
+   set component is-resizing true
+   set resize-overlay [
+    global document createElement, call div
+   ]
+   get resize-overlay classList add, call window-resize-overlay
+   global document body appendChild, tell [ get resize-overlay ]
+   set handle-mousemove [
+    function event [
+     get component is-resizing, true [
+      set delta-x [ get event clientX, subtract [ get component start-x ] ]
+      set delta-y [ get event clientY, subtract [ get component start-y ] ]
+      set new-width [
+       global Math max, call [
+        get component start-width, add [ get delta-x ]
+       ] [
+        value 150
+       ]
+      ]
+      set new-height [
+       global Math max, call [
+        get component start-height, add [ get delta-y ]
+       ] [
+        value 100
+       ]
+      ]
+      set component width [ get new-width ]
+      set component height [ get new-height ]
+      get component maximized, false [
+       set [ get component ] element style width [
+        template %0px [ get component width ]
+       ]
+       set [ get component ] element style height [
+        template %0px [ get component height ]
+       ]
+      ]
+     ]
+    ]
+   ]
+   set handle-mouseup [
+    function event [
+     set component is-resizing false
+     get resize-overlay parentNode, true [
+      get resize-overlay parentNode removeChild, call [ get resize-overlay ]
+     ]
+     global document removeEventListener, tell mousemove [ get handle-mousemove ]
+     global document removeEventListener, tell mouseup [ get handle-mouseup ]
+    ]
+   ]
+   global document addEventListener, tell mousemove [ get handle-mousemove ]
+   global document addEventListener, tell mouseup [ get handle-mouseup ]
+  ]
+ ]
  get raise-window, tell
  set [ get component ] element style width [
   template %0px [ get component width ]
  ]
  set [ get component ] element style height [
   template %0px [ get component height ]
+ ]
+ set component fill [
+  function content-element [
+   get component content appendChild, call [ get content-element ]
+  ]
  ]
  get component
 ]
