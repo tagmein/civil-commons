@@ -2,9 +2,7 @@
 
 set commons [ get components menu, call Commons ]
 get commons add, call About [
- function [
-  get conductor dispatch, call commons:about
- ]
+ get conductor dispatch, will commons:about
 ]
 
 get commons

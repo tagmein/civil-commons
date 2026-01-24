@@ -486,6 +486,25 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    }
    return me
   },
+  async will(...argumentListRaw) {
+   const argumentList = processCrownList(argumentListRaw)
+   if (typeof currentValue !== "function") {
+    throw new Error(`Expecting value to be a function, but got: ${typeof currentValue}`)
+   }
+   try {
+    const functionReference = currentValue
+    if (typeof functionReference !== 'function') {
+      throw new Error(`will expects function, got ${typeof currentValue}`)
+    }
+    currentValue = async function () {
+      return uncrown(await functionReference(...argumentList))
+    }
+   } catch (e) {
+    currentError = e
+    currentValue = undefined
+   }
+   return me
+  },
   clear_error() {
    currentError = undefined
    return me

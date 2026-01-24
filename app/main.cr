@@ -49,4 +49,10 @@ list tabs menu stage status startup, each [
  ]
 ]
 
+list commons/about log/main, each [
+ function x [
+  load [ template ./modules/%0.cr [ get x ] ], point
+ ]
+]
+
 get main stage resize, tell

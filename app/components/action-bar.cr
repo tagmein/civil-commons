@@ -52,9 +52,7 @@ function [
         unset last-toggle current
        ] 
        set last-toggle current [
-        function [
-         get on-click, call [ get item ] false
-        ]
+        get on-click, will [ get item ] false
        ]
        set last-toggle element [ get label-element ]
       ], true [
