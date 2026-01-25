@@ -348,12 +348,30 @@ set update-bounds [
              set stage-delta-x [ get delta-x, divide [ get component scale ] ]
              set stage-delta-y [ get delta-y, divide [ get component scale ] ]
              get dragged-window maximized, false [
-              set new-x [ get state start-x, add [ get stage-delta-x ] ]
-              set new-y [ get state start-y, add [ get stage-delta-y ] ]
+              set new-pos-ref [
+               object [
+                x [ get state start-x, add [ get stage-delta-x ] ]
+                y [ get state start-y, add [ get stage-delta-y ] ]
+               ]
+              ]
+              get new-pos-ref x, < -6000, true [
+               set new-pos-ref x -6000
+              ]
+              get new-pos-ref y, < -6000, true [
+               set new-pos-ref y -6000
+              ]
+              set window-right [ get new-pos-ref x, add [ get dragged-window width ] ]
+              get window-right, > 6000, true [
+               set new-pos-ref x [ value 6000, subtract [ get dragged-window width ] ]
+              ]
+              set window-bottom [ get new-pos-ref y, add [ get dragged-window height ] ]
+              get window-bottom, > 6000, true [
+               set new-pos-ref y [ value 6000, subtract [ get dragged-window height ] ]
+              ]
               set dragged-window position [
                object [
-                x [ get new-x ]
-                y [ get new-y ]
+                x [ get new-pos-ref x ]
+                y [ get new-pos-ref y ]
                ]
               ]
               set [ get dragged-window ] element style transform [
@@ -442,26 +460,51 @@ set update-bounds [
   ] [
    function event start-x start-y state component delta-x delta-y [
     get component is-dragging-viewport, true [
+     get component update-bounds, call
      set scaled-delta-x [ get delta-x, divide [ get component scale ] ]
      set scaled-delta-y [ get delta-y, divide [ get component scale ] ]
-     set stage-delta-x [ get scaled-delta-x, multiply -1 ]
-     set stage-delta-y [ get scaled-delta-y, multiply -1 ]
+     set stage-delta-x [ get scaled-delta-x, multiply -1, divide [ value 10 ] ]
+     set stage-delta-y [ get scaled-delta-y, multiply -1, divide [ value 10 ] ]
      get component stage, true [
       get component stage windows, each [
        function window [
-        get state drag-start-positions [ get window ], true [
+         get state drag-start-positions [ get window ], true [
          set start-pos [ get state drag-start-positions [ get window ] ]
          get window maximized, false [
-          set new-x [ get start-pos x, add [ get stage-delta-x ] ]
-          set new-y [ get start-pos y, add [ get stage-delta-y ] ]
+          set new-pos-ref [
+           object [
+            x [ get start-pos x, add [ get stage-delta-x ] ]
+            y [ get start-pos y, add [ get stage-delta-y ] ]
+           ]
+          ]
+          get new-pos-ref x, < -6000, true [
+           set new-pos-ref x -6000
+          ]
+          get new-pos-ref y, < -6000, true [
+           set new-pos-ref y -6000
+          ]
+          set window-right [ get new-pos-ref x, add [ get window width ] ]
+          get window-right, > 6000, true [
+           set new-pos-ref x [ value 6000, subtract [ get window width ] ]
+          ]
+          set window-bottom [ get new-pos-ref y, add [ get window height ] ]
+          get window-bottom, > 6000, true [
+           set new-pos-ref y [ value 6000, subtract [ get window height ] ]
+          ]
           set window position [
            object [
-            x [ get new-x ]
-            y [ get new-y ]
+            x [ get new-pos-ref x ]
+            y [ get new-pos-ref y ]
            ]
           ]
           set [ get window ] element style transform [
            template 'translate(%0px, %1px)' [ get window position x ] [ get window position y ]
+          ]
+          set state drag-start-positions [ get window ] [
+           object [
+            x [ get new-pos-ref x ]
+            y [ get new-pos-ref y ]
+           ]
           ]
          ]
         ]

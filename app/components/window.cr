@@ -358,12 +358,30 @@ function title height width [
    function event start-x start-y state component delta-x delta-y [
     get state, true [
      get component is-dragging, true [
-      set new-x [ get state start-x, add [ get delta-x ] ]
-      set new-y [ get state start-y, add [ get delta-y ] ]
+      set new-pos-ref [
+       object [
+        x [ get state start-x, add [ get delta-x ] ]
+        y [ get state start-y, add [ get delta-y ] ]
+       ]
+      ]
+      get new-pos-ref x, < -6000, true [
+       set new-pos-ref x -6000
+      ]
+      get new-pos-ref y, < -6000, true [
+       set new-pos-ref y -6000
+      ]
+      set window-right [ get new-pos-ref x, add [ get component width ] ]
+      get window-right, > 6000, true [
+       set new-pos-ref x [ value 6000, subtract [ get component width ] ]
+      ]
+      set window-bottom [ get new-pos-ref y, add [ get component height ] ]
+      get window-bottom, > 6000, true [
+       set new-pos-ref y [ value 6000, subtract [ get component height ] ]
+      ]
       set component position [
        object [
-        x [ get new-x ]
-        y [ get new-y ]
+        x [ get new-pos-ref x ]
+        y [ get new-pos-ref y ]
        ]
       ]
       set [ get component ] element style transform [
@@ -402,22 +420,36 @@ function title height width [
      get component is-resizing, true [
       set delta-x [ get event clientX, subtract [ get component start-x ] ]
       set delta-y [ get event clientY, subtract [ get component start-y ] ]
-      set new-width [
-       global Math max, call [
-        get component start-width, add [ get delta-x ]
-       ] [
-        value 150
+      set new-size-ref [
+       object [
+        width [
+         global Math max, call [
+          get component start-width, add [ get delta-x ]
+         ] [
+          value 150
+         ]
+        ]
+        height [
+         global Math max, call [
+          get component start-height, add [ get delta-y ]
+         ] [
+          value 100
+         ]
+        ]
        ]
       ]
-      set new-height [
-       global Math max, call [
-        get component start-height, add [ get delta-y ]
-       ] [
-        value 100
+      get component position, true [
+       set window-right [ get component position x, add [ get new-size-ref width ] ]
+       get window-right, > 6000, true [
+        set new-size-ref width [ value 6000, subtract [ get component position x ] ]
+       ]
+       set window-bottom [ get component position y, add [ get new-size-ref height ] ]
+       get window-bottom, > 6000, true [
+        set new-size-ref height [ value 6000, subtract [ get component position y ] ]
        ]
       ]
-      set component width [ get new-width ]
-      set component height [ get new-height ]
+      set component width [ get new-size-ref width ]
+      set component height [ get new-size-ref height ]
       get component maximized, false [
        set [ get component ] element style width [
         template %0px [ get component width ]
@@ -463,22 +495,36 @@ get component resize-handle addEventListener, tell mousedown [
   ] [
    function event start-x start-y state component delta-x delta-y [
     get component is-resizing, true [
-     set new-width [
-      global Math max, call [
-       get state start-width, add [ get delta-x ]
-      ] [
-       value 150
+     set new-size-ref [
+      object [
+       width [
+        global Math max, call [
+         get state start-width, add [ get delta-x ]
+        ] [
+         value 150
+        ]
+       ]
+       height [
+        global Math max, call [
+         get state start-height, add [ get delta-y ]
+        ] [
+         value 100
+        ]
+       ]
       ]
      ]
-     set new-height [
-      global Math max, call [
-       get state start-height, add [ get delta-y ]
-      ] [
-       value 100
+     get component position, true [
+      set window-right [ get component position x, add [ get new-size-ref width ] ]
+      get window-right, > 6000, true [
+       set new-size-ref width [ value 6000, subtract [ get component position x ] ]
+      ]
+      set window-bottom [ get component position y, add [ get new-size-ref height ] ]
+      get window-bottom, > 6000, true [
+       set new-size-ref height [ value 6000, subtract [ get component position y ] ]
       ]
      ]
-     set component width [ get new-width ]
-     set component height [ get new-height ]
+     set component width [ get new-size-ref width ]
+     set component height [ get new-size-ref height ]
      get component maximized, false [
       set [ get component ] element style width [
        template %0px [ get component width ]
