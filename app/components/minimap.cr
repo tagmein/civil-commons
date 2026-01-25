@@ -117,72 +117,32 @@ set update-bounds [
         set window-y [ get window position y ]
         set window-width [ get window width ]
         set window-height [ get window height ]
-        set window-right [ get window-x, add [ get window-width ] ]
-        set window-bottom [ get window-y, add [ get window-height ] ]
-        get component _bounds-ref minX, is null [
-         set component _bounds-ref minX [ get window-x ]
-         set component _bounds-ref minY [ get window-y ]
-         set component _bounds-ref maxX [ get window-right ]
-         set component _bounds-ref maxY [ get window-bottom ]
-        ], false [
-         get component _bounds-ref minX, > [ get window-x ], false [
-          set component _bounds-ref minX [ get window-x ]
-         ]
-         get component _bounds-ref minY, > [ get window-y ], false [
-          set component _bounds-ref minY [ get window-y ]
-         ]
-         get component _bounds-ref maxX, < [ get window-right ], false [
-          set component _bounds-ref maxX [ get window-right ]
-         ]
-         get component _bounds-ref maxY, < [ get window-bottom ], false [
-          set component _bounds-ref maxY [ get window-bottom ]
-         ]
-        ]
+        get lib bounds expand-rect, call [ get component _bounds-ref ] [ get window-x ] [ get window-y ] [ get window-width ] [ get window-height ]
        ]
       ]
      ]
     ]
-    set min-x-value [ get component _bounds-ref minX ]
-    set min-y-value [ get component _bounds-ref minY ]
-    set max-x-value [ get component _bounds-ref maxX ]
-    set max-y-value [ get component _bounds-ref maxY ]
-    get min-x-value, is null [
-     set component _bounds-ref minX [ get stage-min-x ]
-     set component _bounds-ref minY [ get stage-min-y ]
-     set component _bounds-ref maxX [ get stage-max-x ]
-     set component _bounds-ref maxY [ get stage-max-y ]
-    ], false [
-     get min-x-value, < [ get stage-min-x ], true [
-      set component _bounds-ref minX [ get min-x-value ]
-     ], false [
-      set component _bounds-ref minX [ get stage-min-x ]
-     ]
-     get min-y-value, < [ get stage-min-y ], true [
-      set component _bounds-ref minY [ get min-y-value ]
-     ], false [
-      set component _bounds-ref minY [ get stage-min-y ]
-     ]
-     get max-x-value, > [ get stage-max-x ], true [
-      set component _bounds-ref maxX [ get max-x-value ]
-     ], false [
-      set component _bounds-ref maxX [ get stage-max-x ]
-     ]
-     get max-y-value, > [ get stage-max-y ], true [
-      set component _bounds-ref maxY [ get max-y-value ]
-     ], false [
-      set component _bounds-ref maxY [ get stage-max-y ]
+    set window-bounds [
+     object [
+      minX [ get component _bounds-ref minX ]
+      minY [ get component _bounds-ref minY ]
+      maxX [ get component _bounds-ref maxX ]
+      maxY [ get component _bounds-ref maxY ]
      ]
     ]
-    set final-min-x [ get component _bounds-ref minX ]
-    set final-min-y [ get component _bounds-ref minY ]
-    set final-max-x [ get component _bounds-ref maxX ]
-    set final-max-y [ get component _bounds-ref maxY ]
-    set component bounds [
+    set stage-bounds [
      object [
-      minX [ get final-min-x ]
-      minY [ get final-min-y ]
-      maxX [ get final-max-x ]
-      maxY [ get final-max-y ]
+      minX [ get stage-min-x ]
+      minY [ get stage-min-y ]
+      maxX [ get stage-max-x ]
+      maxY [ get stage-max-y ]
+     ]
+    ]
+    get component _bounds-ref minX, is null [
+     set component bounds [ get stage-bounds ]
+    ], false [
+     set component bounds [
+      get lib bounds merge-bounds, call [ get window-bounds ] [ get stage-bounds ]
      ]
     ]
    ], false [
