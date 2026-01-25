@@ -196,6 +196,7 @@ function title height width [
     set [ get component ] element style height [
      template %0px [ get component height ]
     ]
+    get raise-window, tell
    ], false [
     get component element classList add, call maximized
     set component maximized true
@@ -204,6 +205,12 @@ function title height width [
     set [ get component ] element style transform ''
     set [ get component ] element style width ''
     set [ get component ] element style height ''
+    set [ get component ] element style z-index 2000
+   ]
+   get component stage, true [
+    get component stage minimap, true [
+     get component stage minimap update-window, call [ get component ]
+    ]
    ]
   ]
  ]
@@ -217,6 +224,18 @@ function title height width [
    ]
    unset component status-item
    unset component status-item-element
+   get component stage, true [
+    get component stage minimap, true [
+     get component stage minimap remove-window, call [ get component ]
+    ]
+    set component stage windows [
+     get component stage windows, filter [
+      function w [
+       get w, is [ get component ], false
+      ]
+     ]
+    ]
+   ]
   ]
  ]
  set minimize-window [
@@ -231,6 +250,11 @@ function title height width [
     ]
     set component status-item [ get status-item ]
     set component status-item-element [ get status-item element ]
+    get component stage, true [
+     get component stage minimap, true [
+      get component stage minimap remove-window, call [ get component ]
+     ]
+    ]
    ]
   ]
  ]
@@ -259,6 +283,9 @@ function title height width [
       set [ get component ] element style height [
        template %0px [ get component height ]
       ]
+     ]
+     get component stage minimap, true [
+      get component stage minimap add-window, call [ get component ]
      ]
     ]
    ]
@@ -336,6 +363,11 @@ function title height width [
        set [ get component ] element style transform [
         template 'translate(%0px, %1px)' [ get component position x ] [ get component position y ]
        ]
+       get component stage, true [
+        get component stage minimap, true [
+         get component stage minimap update-window, call [ get component ]
+        ]
+       ]
       ]
      ]
     ]
@@ -356,7 +388,6 @@ function title height width [
  ]
  set start-resize [
   function event [
-   log [ get event ]
    get event stopPropagation, tell
    get event preventDefault, tell
    set component start-x [ get event clientX ]
@@ -393,6 +424,11 @@ function title height width [
         template %0px [ get component height ]
        ]
       ]
+      get component stage, true [
+       get component stage minimap, true [
+        get component stage minimap update-window, call [ get component ]
+       ]
+      ]
      ]
     ]
    ]
@@ -409,7 +445,6 @@ function title height width [
  ]
 get component resize-handle addEventListener, tell mousedown [
   function event [
-   log [ get event ]
    get event stopPropagation, tell
    get event preventDefault, tell
    set component start-x [ get event clientX ]
@@ -449,6 +484,11 @@ get component resize-handle addEventListener, tell mousedown [
        ]
        set [ get component ] element style height [
         template %0px [ get component height ]
+       ]
+      ]
+      get component stage, true [
+       get component stage minimap, true [
+        get component stage minimap update-window, call [ get component ]
        ]
       ]
      ]

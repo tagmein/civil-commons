@@ -37,6 +37,7 @@ function [
    content [
     global document createElement, call div
    ]
+   windows [ list ]
    place-next [
     object [
      x 0
@@ -71,6 +72,10 @@ function [
      get status, true [
       set [ get window ] status-bar [ get status ]
       set [ get window ] stage [ get component ]
+     ]
+     get component windows push, tell [ get window ]
+     get component minimap, true [
+      get component minimap add-window, call [ get window ]
      ]
     ]
    ]
@@ -142,5 +147,11 @@ function [
  global setTimeout, call [ get resize ]
  global addEventListener, call resize [ get resize ]
  set component resize [ get resize ]
+
+ set component minimap [
+  get components minimap, call [ get component ]
+ ]
+ get component element appendChild, tell [ get component minimap element ]
+
  get component
 ]

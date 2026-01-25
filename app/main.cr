@@ -33,7 +33,7 @@ set lib [
 set components [
  get package
  call components [
-  list action-bar stage menu window window-title-buttons
+  list action-bar stage menu window window-title-buttons minimap
  ]
 ]
 
