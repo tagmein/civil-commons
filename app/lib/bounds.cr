@@ -38,28 +38,35 @@ set merge-bounds [
   set stage-min-y [ get stage-bounds minY ]
   set stage-max-x [ get stage-bounds maxX ]
   set stage-max-y [ get stage-bounds maxY ]
-  set merged-min-x [ get stage-min-x ]
-  get window-min-x, < [ get stage-min-x ], true [
-   set merged-min-x [ get window-min-x ]
+  set merged-ref [
+   object [
+    minX [ get stage-min-x ]
+    minY [ get stage-min-y ]
+    maxX [ get stage-max-x ]
+    maxY [ get stage-max-y ]
+   ]
   ]
-  set merged-min-y [ get stage-min-y ]
-  get window-min-y, < [ get stage-min-y ], true [
-   set merged-min-y [ get window-min-y ]
+  get window-min-x, < [ get merged-ref minX ], true [
+   set merged-ref minX [ get window-min-x ]
   ]
-  set merged-max-x [ get stage-max-x ]
-  get window-max-x, > [ get stage-max-x ], true [
-   set merged-max-x [ get window-max-x ]
+  get window-min-y, < [ get merged-ref minY ], true [
+   set merged-ref minY [ get window-min-y ]
   ]
-  set merged-max-y [ get stage-max-y ]
-  get window-max-y, > [ get stage-max-y ], true [
-   set merged-max-y [ get window-max-y ]
+  get window-max-x, > [ get merged-ref maxX ], true [
+   set merged-ref maxX [ get window-max-x ]
   ]
-  object [
-   minX [ get merged-min-x ]
-   minY [ get merged-min-y ]
-   maxX [ get merged-max-x ]
-   maxY [ get merged-max-y ]
+  get window-max-y, > [ get merged-ref maxY ], true [
+   set merged-ref maxY [ get window-max-y ]
   ]
+  set result [
+   object [
+    minX [ get merged-ref minX ]
+    minY [ get merged-ref minY ]
+    maxX [ get merged-ref maxX ]
+    maxY [ get merged-ref maxY ]
+   ]
+  ]
+  get result
  ]
 ]
 

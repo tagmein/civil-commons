@@ -138,12 +138,19 @@ set update-bounds [
       maxY [ get stage-max-y ]
      ]
     ]
-    get component _bounds-ref minX, is null [
-     set component bounds [ get stage-bounds ]
-    ], false [
-     set component bounds [
-      get lib bounds merge-bounds, call [ get window-bounds ] [ get stage-bounds ]
+    set window-bounds-width [ get window-bounds maxX, subtract [ get window-bounds minX ] ]
+    set window-bounds-height [ get window-bounds maxY, subtract [ get window-bounds minY ] ]
+    get window-bounds-width, > 0, true [
+     get window-bounds-height, > 0, true [
+      set merged-bounds [
+       get lib bounds merge-bounds, call [ get window-bounds ] [ get stage-bounds ]
+      ]
+      set component bounds [ get merged-bounds ]
+     ], false [
+      set component bounds [ get stage-bounds ]
      ]
+    ], false [
+     set component bounds [ get stage-bounds ]
     ]
    ], false [
     set component bounds [
@@ -174,11 +181,15 @@ set update-bounds [
       get bounds-height, > 0, true [
        set scale-x [ get content-width, divide [ get bounds-width ] ]
        set scale-y [ get content-height, divide [ get bounds-height ] ]
-       set min-scale [ get scale-x ]
-       get scale-y, < [ get scale-x ], true [
-        set min-scale [ get scale-y ]
+       set min-scale-ref [
+        object [
+         value [ get scale-x ]
+        ]
        ]
-       set component scale [ get min-scale ]
+       get scale-y, < [ get scale-x ], true [
+        set min-scale-ref value [ get scale-y ]
+       ]
+       set component scale [ get min-scale-ref value ]
       ]
      ]
     ]
@@ -236,39 +247,37 @@ set update-bounds [
        set component viewportHeight 0
       ]
       get component scale, > 0, true [
-       get component is-dragging-viewport, false [
-        set bounds-min-x [ get component bounds minX ]
-        set bounds-min-y [ get component bounds minY ]
-        set calculated-viewport-x [
-         get bounds-min-x, multiply -1, multiply [ get component scale ]
-        ]
-        set calculated-viewport-y [
-         get bounds-min-y, multiply -1, multiply [ get component scale ]
-        ]
-        set min-viewport-x 0
-        set min-viewport-y 0
-        set max-viewport-x [ get content-width, subtract [ get component viewportWidth ] ]
-        set max-viewport-y [ get content-height, subtract [ get component viewportHeight ] ]
-        get max-viewport-x, < 0, true [
-         set max-viewport-x 0
-        ]
-        get max-viewport-y, < 0, true [
-         set max-viewport-y 0
-        ]
-        set component viewportX [ get calculated-viewport-x ]
-        get component viewportX, < [ get min-viewport-x ], true [
-         set component viewportX [ get min-viewport-x ]
-        ]
-        get component viewportX, > [ get max-viewport-x ], true [
-         set component viewportX [ get max-viewport-x ]
-        ]
-        set component viewportY [ get calculated-viewport-y ]
-        get component viewportY, < [ get min-viewport-y ], true [
-         set component viewportY [ get min-viewport-y ]
-        ]
-        get component viewportY, > [ get max-viewport-y ], true [
-         set component viewportY [ get max-viewport-y ]
-        ]
+       set bounds-min-x [ get component bounds minX ]
+       set bounds-min-y [ get component bounds minY ]
+       set calculated-viewport-x [
+        get bounds-min-x, multiply -1, multiply [ get component scale ]
+       ]
+       set calculated-viewport-y [
+        get bounds-min-y, multiply -1, multiply [ get component scale ]
+       ]
+       set min-viewport-x 0
+       set min-viewport-y 0
+       set max-viewport-x [ get content-width, subtract [ get component viewportWidth ] ]
+       set max-viewport-y [ get content-height, subtract [ get component viewportHeight ] ]
+       get max-viewport-x, < 0, true [
+        set max-viewport-x 0
+       ]
+       get max-viewport-y, < 0, true [
+        set max-viewport-y 0
+       ]
+       set component viewportX [ get calculated-viewport-x ]
+       get component viewportX, < [ get min-viewport-x ], true [
+        set component viewportX [ get min-viewport-x ]
+       ]
+       get component viewportX, > [ get max-viewport-x ], true [
+        set component viewportX [ get max-viewport-x ]
+       ]
+       set component viewportY [ get calculated-viewport-y ]
+       get component viewportY, < [ get min-viewport-y ], true [
+        set component viewportY [ get min-viewport-y ]
+       ]
+       get component viewportY, > [ get max-viewport-y ], true [
+        set component viewportY [ get max-viewport-y ]
        ]
       ], false [
        set component viewportX 0
@@ -302,41 +311,56 @@ set update-bounds [
     get component content appendChild, tell [ get minimap-window-element ]
     set component windows [ get window ] [ get minimap-window-element ]
     set window minimap-element [ get minimap-window-element ]
-    set start-window-drag [
-     function event [
-      get event stopPropagation, tell
-      get event preventDefault, tell
-      set component is-dragging-window true
-      set component dragged-window [ get window ]
-      set component drag-start-x [ get event clientX ]
-      set component drag-start-y [ get event clientY ]
-      get window position, true [
-       set component drag-start-window-x [ get window position x ]
-       set component drag-start-window-y [ get window position y ]
+     set start-window-drag [
+     get lib drag-handler create, call [ get component ] [
+      function event component [
+       set component is-dragging-window true
+       set component dragged-window [ get window ]
+       set return-ref [ object [ value null ] ]
+       get window position, true [
+        set return-ref value [
+         object [
+          window [ get window ]
+          start-x [ get window position x ]
+          start-y [ get window position y ]
+         ]
+        ]
+       ], false [
+        set return-ref value [
+         object [
+          window [ get window ]
+          start-x null
+          start-y null
+         ]
+        ]
+       ]
+       get return-ref value
       ]
-      set handle-window-mousemove [
-       function event [
+     ] [
+      function event start-x start-y state component delta-x delta-y [
+       get state, true [
+        set dragged-window [ get state window ]
         get component is-dragging-window, true [
          get component dragged-window, true [
-          set delta-x [ get event clientX, subtract [ get component drag-start-x ] ]
-          set delta-y [ get event clientY, subtract [ get component drag-start-y ] ]
-          set stage-delta-x [ get delta-x, divide [ get component scale ] ]
-          set stage-delta-y [ get delta-y, divide [ get component scale ] ]
-          get component dragged-window maximized, false [
-           get component drag-start-window-x, true [
-            get component drag-start-window-y, true [
-             set new-x [ get component drag-start-window-x, add [ get stage-delta-x ] ]
-             set new-y [ get component drag-start-window-y, add [ get stage-delta-y ] ]
-             set component dragged-window position [
-              object [
-               x [ get new-x ]
-               y [ get new-y ]
+          get dragged-window, true [
+           get state start-x, true [
+            get state start-y, true [
+             set stage-delta-x [ get delta-x, divide [ get component scale ] ]
+             set stage-delta-y [ get delta-y, divide [ get component scale ] ]
+             get dragged-window maximized, false [
+              set new-x [ get state start-x, add [ get stage-delta-x ] ]
+              set new-y [ get state start-y, add [ get stage-delta-y ] ]
+              set dragged-window position [
+               object [
+                x [ get new-x ]
+                y [ get new-y ]
+               ]
               ]
+              set [ get dragged-window ] element style transform [
+               template 'translate(%0px, %1px)' [ get dragged-window position x ] [ get dragged-window position y ]
+              ]
+              get component update-bounds, call
              ]
-             set [ get component dragged-window ] element style transform [
-              template 'translate(%0px, %1px)' [ get component dragged-window position x ] [ get component dragged-window position y ]
-             ]
-             get component update-bounds, call
             ]
            ]
           ]
@@ -344,18 +368,14 @@ set update-bounds [
         ]
        ]
       ]
-      set handle-window-mouseup [
-       function event [
+     ] [
+      function state component [
+       get state, true [
         set component is-dragging-window false
         unset component dragged-window
-        unset component drag-start-window-x
-        unset component drag-start-window-y
-        global document removeEventListener, tell mousemove [ get handle-window-mousemove ]
-        global document removeEventListener, tell mouseup [ get handle-window-mouseup ]
+        get component update-bounds, call
        ]
       ]
-      global document addEventListener, tell mousemove [ get handle-window-mousemove ]
-      global document addEventListener, tell mouseup [ get handle-window-mouseup ]
      ]
     ]
     get minimap-window-element addEventListener, tell mousedown [
@@ -395,113 +415,67 @@ set update-bounds [
  ]
 
  set start-viewport-drag [
-  function event [
-   set component is-dragging-viewport true
-   get event stopPropagation, tell
-   get event preventDefault, tell
-   set component drag-start-x [ get event clientX ]
-   set component drag-start-y [ get event clientY ]
-   set component drag-start-viewport-x [ get component viewportX ]
-   set component drag-start-viewport-y [ get component viewportY ]
-   set component drag-start-positions [ object ]
-   get component stage, true [
-    get component stage windows, each [
-     function window [
-      get window maximized, false [
-       get window position, true [
-        set component drag-start-positions [ get window ] [
-         object [
-          x [ get window position x ]
-          y [ get window position y ]
-         ]
-        ]
-       ]
-      ]
-     ]
-    ]
-   ]
-   set handle-viewport-mousemove [
-    function event [
-     get component is-dragging-viewport, true [
-      set content-width [ get component content offsetWidth ]
-      set content-height [ get component content offsetHeight ]
-      set delta-x [ get event clientX, subtract [ get component drag-start-x ] ]
-      set delta-y [ get event clientY, subtract [ get component drag-start-y ] ]
-      set new-viewport-x [ get component drag-start-viewport-x, add [ get delta-x ] ]
-      set new-viewport-y [ get component drag-start-viewport-y, add [ get delta-y ] ]
-      set min-x 0
-      set min-y 0
-      set max-x [ get content-width, subtract [ get component viewportWidth ] ]
-      set max-y [ get content-height, subtract [ get component viewportHeight ] ]
-      get max-x, < 0, true [
-       set max-x 0
-      ]
-      get max-y, < 0, true [
-       set max-y 0
-      ]
-      get new-viewport-x, < [ get min-x ], true [
-       set new-viewport-x [ get min-x ]
-      ]
-      get new-viewport-x, > [ get max-x ], true [
-       set new-viewport-x [ get max-x ]
-      ]
-      get new-viewport-y, < [ get min-y ], true [
-       set new-viewport-y [ get min-y ]
-      ]
-      get new-viewport-y, > [ get max-y ], true [
-       set new-viewport-y [ get max-y ]
-      ]
-      set viewport-delta-x [ get new-viewport-x, subtract [ get component drag-start-viewport-x ] ]
-      set viewport-delta-y [ get new-viewport-y, subtract [ get component drag-start-viewport-y ] ]
-      set scaled-delta-x [ get viewport-delta-x, divide [ get component scale ] ]
-      set scaled-delta-y [ get viewport-delta-y, divide [ get component scale ] ]
-      set stage-delta-x [ get scaled-delta-x, multiply -1 ]
-      set stage-delta-y [ get scaled-delta-y, multiply -1 ]
-      get component stage, true [
-       get component stage windows, each [
-        function window [
-         get component drag-start-positions [ get window ], true [
-          set start-pos [ get component drag-start-positions [ get window ] ]
-          get window maximized, false [
-           set new-x [ get start-pos x, add [ get stage-delta-x ] ]
-           set new-y [ get start-pos y, add [ get stage-delta-y ] ]
-           set window position [
-            object [
-             x [ get new-x ]
-             y [ get new-y ]
-            ]
-           ]
-           set [ get window ] element style transform [
-            template 'translate(%0px, %1px)' [ get window position x ] [ get window position y ]
-           ]
+  get lib drag-handler create, call [ get component ] [
+   function event component [
+    set component is-dragging-viewport true
+    set drag-start-positions [ object ]
+    get component stage, true [
+     get component stage windows, each [
+      function window [
+       get window maximized, false [
+        get window position, true [
+         set drag-start-positions [ get window ] [
+          object [
+           x [ get window position x ]
+           y [ get window position y ]
           ]
          ]
         ]
        ]
       ]
-      set component viewportX [ get new-viewport-x ]
-      set component viewportY [ get new-viewport-y ]
-      set [ get component viewport ] style left [
-       template %0px [ get component viewportX ]
-      ]
-      set [ get component viewport ] style top [
-       template %0px [ get component viewportY ]
-      ]
-      get component update-bounds, call
      ]
     ]
-   ]
-   set handle-viewport-mouseup [
-    function event [
-     set component is-dragging-viewport false
-     unset component drag-start-positions
-     get component update-bounds, call
-     global document removeEventListener, tell mousemove [ get handle-viewport-mousemove ]
-     global document removeEventListener, tell mouseup [ get handle-viewport-mouseup ]
+    object [
+     drag-start-positions [ get drag-start-positions ]
     ]
    ]
-   global document addEventListener, tell mousemove [ get handle-viewport-mousemove ]
-   global document addEventListener, tell mouseup [ get handle-viewport-mouseup ]
+  ] [
+   function event start-x start-y state component delta-x delta-y [
+    get component is-dragging-viewport, true [
+     set scaled-delta-x [ get delta-x, divide [ get component scale ] ]
+     set scaled-delta-y [ get delta-y, divide [ get component scale ] ]
+     set stage-delta-x [ get scaled-delta-x, multiply -1 ]
+     set stage-delta-y [ get scaled-delta-y, multiply -1 ]
+     get component stage, true [
+      get component stage windows, each [
+       function window [
+        get state drag-start-positions [ get window ], true [
+         set start-pos [ get state drag-start-positions [ get window ] ]
+         get window maximized, false [
+          set new-x [ get start-pos x, add [ get stage-delta-x ] ]
+          set new-y [ get start-pos y, add [ get stage-delta-y ] ]
+          set window position [
+           object [
+            x [ get new-x ]
+            y [ get new-y ]
+           ]
+          ]
+          set [ get window ] element style transform [
+           template 'translate(%0px, %1px)' [ get window position x ] [ get window position y ]
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+     get component update-bounds, call
+    ]
+   ]
+  ] [
+   function state component [
+    set component is-dragging-viewport false
+    get component update-bounds, call
+   ]
   ]
  ]
 

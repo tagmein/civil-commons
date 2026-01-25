@@ -26,7 +26,7 @@ set package [
 set lib [
  get package
  call lib [
-  list bounds style-tag svg-icon
+  list bounds drag-handler style-tag svg-icon
  ]
 ]
 

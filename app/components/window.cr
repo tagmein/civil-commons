@@ -331,55 +331,57 @@ function title height width [
   get raise-window
  ]
  set start-drag [
-  function event [
-   get component maximized, false [
-    set component is-dragging true
-    get raise-window, tell
-    get component position, false [
-     set component position [
+  get lib drag-handler create, call [ get component ] [
+   function event component [
+    set return-ref [ object [ value null ] ]
+    get component maximized, false [
+     set component is-dragging true
+     get raise-window, tell
+     get component position, false [
+      set component position [
+       object [
+        x 0
+        y 0
+       ]
+      ]
+     ]
+     set return-ref value [
       object [
-       x 0
-       y 0
+       start-x [ get component position x ]
+       start-y [ get component position y ]
       ]
      ]
     ]
-    set component drag-start-x [ get event clientX ]
-    set component drag-start-y [ get event clientY ]
-    set component drag-start-position-x [ get component position x ]
-    set component drag-start-position-y [ get component position y ]
-    set handle-drag-mousemove [
-     function event [
-      get component is-dragging, true [
-       set delta-x [ get event clientX, subtract [ get component drag-start-x ] ]
-       set delta-y [ get event clientY, subtract [ get component drag-start-y ] ]
-       set new-x [ get component drag-start-position-x, add [ get delta-x ] ]
-       set new-y [ get component drag-start-position-y, add [ get delta-y ] ]
-       set component position [
-        object [
-         x [ get new-x ]
-         y [ get new-y ]
-        ]
+    get return-ref value
+   ]
+  ] [
+   function event start-x start-y state component delta-x delta-y [
+    get state, true [
+     get component is-dragging, true [
+      set new-x [ get state start-x, add [ get delta-x ] ]
+      set new-y [ get state start-y, add [ get delta-y ] ]
+      set component position [
+       object [
+        x [ get new-x ]
+        y [ get new-y ]
        ]
-       set [ get component ] element style transform [
-        template 'translate(%0px, %1px)' [ get component position x ] [ get component position y ]
-       ]
-       get component stage, true [
-        get component stage minimap, true [
-         get component stage minimap update-window, call [ get component ]
-        ]
+      ]
+      set [ get component ] element style transform [
+       template 'translate(%0px, %1px)' [ get component position x ] [ get component position y ]
+      ]
+      get component stage, true [
+       get component stage minimap, true [
+        get component stage minimap update-window, call [ get component ]
        ]
       ]
      ]
     ]
-    set handle-drag-mouseup [
-     function event [
-      set component is-dragging false
-      global document removeEventListener, tell mousemove [ get handle-drag-mousemove ]
-      global document removeEventListener, tell mouseup [ get handle-drag-mouseup ]
-     ]
+   ]
+  ] [
+   function state component [
+    get state, true [
+     set component is-dragging false
     ]
-    global document addEventListener, tell mousemove [ get handle-drag-mousemove ]
-    global document addEventListener, tell mouseup [ get handle-drag-mouseup ]
    ]
   ]
  ]
@@ -444,68 +446,61 @@ function title height width [
   ]
  ]
 get component resize-handle addEventListener, tell mousedown [
-  function event [
-   get event stopPropagation, tell
-   get event preventDefault, tell
-   set component start-x [ get event clientX ]
-   set component start-y [ get event clientY ]
-   set component start-width [ get component width ]
-   set component start-height [ get component height ]
-   set component is-resizing true
-   set resize-overlay [
-    global document createElement, call div
+  get lib drag-handler create, call [ get component ] [
+   function event component [
+    set component is-resizing true
+    set resize-overlay [
+     global document createElement, call div
+    ]
+    get resize-overlay classList add, call window-resize-overlay
+    global document body appendChild, tell [ get resize-overlay ]
+    object [
+     start-width [ get component width ]
+     start-height [ get component height ]
+     resize-overlay [ get resize-overlay ]
+    ]
    ]
-   get resize-overlay classList add, call window-resize-overlay
-   global document body appendChild, tell [ get resize-overlay ]
-   set handle-mousemove [
-    function event [
-     get component is-resizing, true [
-      set delta-x [ get event clientX, subtract [ get component start-x ] ]
-      set delta-y [ get event clientY, subtract [ get component start-y ] ]
-      set new-width [
-       global Math max, call [
-        get component start-width, add [ get delta-x ]
-       ] [
-        value 150
-       ]
+  ] [
+   function event start-x start-y state component delta-x delta-y [
+    get component is-resizing, true [
+     set new-width [
+      global Math max, call [
+       get state start-width, add [ get delta-x ]
+      ] [
+       value 150
       ]
-      set new-height [
-       global Math max, call [
-        get component start-height, add [ get delta-y ]
-       ] [
-        value 100
-       ]
+     ]
+     set new-height [
+      global Math max, call [
+       get state start-height, add [ get delta-y ]
+      ] [
+       value 100
       ]
-      set component width [ get new-width ]
-      set component height [ get new-height ]
-      get component maximized, false [
-       set [ get component ] element style width [
-        template %0px [ get component width ]
-       ]
-       set [ get component ] element style height [
-        template %0px [ get component height ]
-       ]
+     ]
+     set component width [ get new-width ]
+     set component height [ get new-height ]
+     get component maximized, false [
+      set [ get component ] element style width [
+       template %0px [ get component width ]
       ]
-      get component stage, true [
-       get component stage minimap, true [
-        get component stage minimap update-window, call [ get component ]
-       ]
+      set [ get component ] element style height [
+       template %0px [ get component height ]
+      ]
+     ]
+     get component stage, true [
+      get component stage minimap, true [
+       get component stage minimap update-window, call [ get component ]
       ]
      ]
     ]
    ]
-   set handle-mouseup [
-    function event [
-     set component is-resizing false
-     get resize-overlay parentNode, true [
-      get resize-overlay parentNode removeChild, call [ get resize-overlay ]
-     ]
-     global document removeEventListener, tell mousemove [ get handle-mousemove ]
-     global document removeEventListener, tell mouseup [ get handle-mouseup ]
+  ] [
+   function state component [
+    set component is-resizing false
+    get state resize-overlay parentNode, true [
+     get state resize-overlay parentNode removeChild, call [ get state resize-overlay ]
     ]
    ]
-   global document addEventListener, tell mousemove [ get handle-mousemove ]
-   global document addEventListener, tell mouseup [ get handle-mouseup ]
   ]
  ]
  get raise-window, tell
