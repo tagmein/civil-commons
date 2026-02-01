@@ -117,6 +117,11 @@ tell .window-resize-overlay [
  ]
 ]
 
+# Virtual stage constants
+set VIRTUAL_STAGE_SIZE 10000
+set MIN_WINDOW_WIDTH 150
+set MIN_WINDOW_HEIGHT 100
+
 set global-window-z [
  object [
   current 0
@@ -128,6 +133,65 @@ set global-window-z [
     get global-window-z current
    ]
   ]
+ ]
+]
+
+# Clamp window position to virtual stage bounds (0 to 10000-size)
+# Uses reference objects to avoid Crown's scoping issues with set in conditionals
+set clamp-window-position [
+ function x y width height [
+  set max-x-raw [ get VIRTUAL_STAGE_SIZE, subtract [ get width ] ]
+  set max-y-raw [ get VIRTUAL_STAGE_SIZE, subtract [ get height ] ]
+  # Use ref object for max values that may need modification
+  set max-ref [ object [ x [ get max-x-raw ], y [ get max-y-raw ] ] ]
+  # Ensure max isn't negative
+  get max-ref x, < 0, true [
+   set max-ref x 0
+  ]
+  get max-ref y, < 0, true [
+   set max-ref y 0
+  ]
+  # Use ref object for clamped values
+  set result [ object [ x [ get x ], y [ get y ] ] ]
+  get result x, < 0, true [
+   set result x 0
+  ]
+  get result x, > [ get max-ref x ], true [
+   set result x [ get max-ref x ]
+  ]
+  get result y, < 0, true [
+   set result y 0
+  ]
+  get result y, > [ get max-ref y ], true [
+   set result y [ get max-ref y ]
+  ]
+  get result
+ ]
+]
+
+# Clamp window size to fit in virtual stage from current position
+# Uses reference objects to avoid Crown's scoping issues with set in conditionals
+set clamp-window-size [
+ function x y width height [
+  set max-width [ get VIRTUAL_STAGE_SIZE, subtract [ get x ] ]
+  set max-height [ get VIRTUAL_STAGE_SIZE, subtract [ get y ] ]
+  # Use ref object for clamped values
+  set result [ object [ width [ get width ], height [ get height ] ] ]
+  # Apply minimum
+  get result width, < [ get MIN_WINDOW_WIDTH ], true [
+   set result width [ get MIN_WINDOW_WIDTH ]
+  ]
+  get result height, < [ get MIN_WINDOW_HEIGHT ], true [
+   set result height [ get MIN_WINDOW_HEIGHT ]
+  ]
+  # Apply maximum
+  get result width, > [ get max-width ], true [
+   set result width [ get max-width ]
+  ]
+  get result height, > [ get max-height ], true [
+   set result height [ get max-height ]
+  ]
+  get result
  ]
 ]
 
@@ -186,14 +250,18 @@ function title height width [
     set component title-buttons maximize-button style display flex
     set component title-buttons restore-button style display none
     get component position, true [
-     set [ get component ] element style transform [
-      template 'translate(%0px, %1px)' [ get component position x ] [ get component position y ]
+     get component stage, true [
+      get component stage apply-window-transform, call [ get component ]
+     ], false [
+      set component element style transform [
+       template 'translate(%0px, %1px)' [ get component position x ] [ get component position y ]
+      ]
      ]
     ]
-    set [ get component ] element style width [
+    set component element style width [
      template %0px [ get component width ]
     ]
-    set [ get component ] element style height [
+    set component element style height [
      template %0px [ get component height ]
     ]
     get raise-window, tell
@@ -202,10 +270,10 @@ function title height width [
     set component maximized true
     set component title-buttons maximize-button style display none
     set component title-buttons restore-button style display flex
-    set [ get component ] element style transform ''
-    set [ get component ] element style width ''
-    set [ get component ] element style height ''
-    set [ get component ] element style z-index 2000
+    set component element style transform ''
+    set component element style width ''
+    set component element style height ''
+    set component element style z-index 2000
    ]
    get component stage, true [
     get component stage minimap, true [
@@ -225,15 +293,15 @@ function title height width [
    unset component status-item
    unset component status-item-element
    get component stage, true [
-    get component stage minimap, true [
-     get component stage minimap remove-window, call [ get component ]
-    ]
     set component stage windows [
      get component stage windows, filter [
       function w [
-       get w, is [ get component ], false
+       get w, is [ get component ], not
       ]
      ]
+    ]
+    get component stage minimap, true [
+     get component stage minimap remove-window, call [ get component ]
     ]
    ]
   ]
@@ -271,16 +339,22 @@ function title height width [
      get component stage content appendChild, tell [
       get component element
      ]
-     get component position, true [
-      set [ get component ] element style transform [
-       template 'translate(%0px, %1px)' [ get component position x ] [ get component position y ]
-      ]
-     ]
-     get component maximized, false [
-      set [ get component ] element style width [
+     get component maximized, true [
+      # Restore as maximized - clear transform/size, ensure maximized class and buttons
+      set component element style transform ''
+      set component element style width ''
+      set component element style height ''
+      set component element style z-index 2000
+      get component element classList add, call maximized
+      set component title-buttons maximize-button style display none
+      set component title-buttons restore-button style display flex
+     ], false [
+      # Restore as normal window with position and size
+      get component stage apply-window-transform, call [ get component ]
+      set component element style width [
        template %0px [ get component width ]
       ]
-      set [ get component ] element style height [
+      set component element style height [
        template %0px [ get component height ]
       ]
      ]
@@ -322,14 +396,20 @@ function title height width [
  get component element appendChild, tell [ get component resize-handle ]
  set raise-window [
   function [
-   set [ get component ] element style z-index [
+   set z-index-value [
     get global-window-z next, call
+   ]
+   set component z-index [ get z-index-value ]
+   set component element style z-index [ get z-index-value ]
+   get component minimap-element, true [
+    set component minimap-element style z-index [ get z-index-value ]
    ]
   ]
  ]
  get component element addEventListener, tell click [
   get raise-window
  ]
+ # Store drag handler first to avoid parsing issues with inline multi-arg call
  set start-drag [
   get lib drag-handler create, call [ get component ] [
    function event component [
@@ -338,59 +418,27 @@ function title height width [
      set component is-dragging true
      get raise-window, tell
      get component position, false [
-      set component position [
-       object [
-        x 0
-        y 0
-       ]
-      ]
+      set component position [ object [ x 0, y 0 ] ]
      ]
-     set return-ref value [
-      object [
-       start-x [ get component position x ]
-       start-y [ get component position y ]
-      ]
-     ]
+     set return-ref value [ object [ startX [ get component position x ], startY [ get component position y ] ] ]
     ]
     get return-ref value
    ]
   ] [
-   function event start-x start-y state component delta-x delta-y [
+   function event startX startY state component deltaX deltaY [
     get state, true [
      get component is-dragging, true [
-      set new-pos-ref [
-       object [
-        x [ get state start-x, add [ get delta-x ] ]
-        y [ get state start-y, add [ get delta-y ] ]
-       ]
-      ]
-      get new-pos-ref x, < -6000, true [
-       set new-pos-ref x -6000
-      ]
-      get new-pos-ref y, < -6000, true [
-       set new-pos-ref y -6000
-      ]
-      set window-right [ get new-pos-ref x, add [ get component width ] ]
-      get window-right, > 6000, true [
-       set new-pos-ref x [ value 6000, subtract [ get component width ] ]
-      ]
-      set window-bottom [ get new-pos-ref y, add [ get component height ] ]
-      get window-bottom, > 6000, true [
-       set new-pos-ref y [ value 6000, subtract [ get component height ] ]
-      ]
-      set component position [
-       object [
-        x [ get new-pos-ref x ]
-        y [ get new-pos-ref y ]
-       ]
-      ]
-      set [ get component ] element style transform [
-       template 'translate(%0px, %1px)' [ get component position x ] [ get component position y ]
-      ]
+      set newX [ get state startX, add [ get deltaX ] ]
+      set newY [ get state startY, add [ get deltaY ] ]
+      set clamped [ get clamp-window-position, call [ get newX ] [ get newY ] [ get component width ] [ get component height ] ]
+      set component position [ object [ x [ get clamped x ], y [ get clamped y ] ] ]
       get component stage, true [
+       get component stage apply-window-transform, call [ get component ]
        get component stage minimap, true [
         get component stage minimap update-window, call [ get component ]
        ]
+      ], false [
+       set component element style transform [ template 'translate(%0px, %1px)' [ get component position x ] [ get component position y ] ]
       ]
      ]
     ]
@@ -406,132 +454,32 @@ function title height width [
  get component title-bar addEventListener, tell mousedown [
   get start-drag
  ]
+ # Store resize handler first to avoid parsing issues with inline multi-arg call
  set start-resize [
-  function event [
-   get event stopPropagation, tell
-   get event preventDefault, tell
-   set component start-x [ get event clientX ]
-   set component start-y [ get event clientY ]
-   set component start-width [ get component width ]
-   set component start-height [ get component height ]
-   set component is-resizing true
-   set handle-mousemove [
-    function event [
-     get component is-resizing, true [
-      set delta-x [ get event clientX, subtract [ get component start-x ] ]
-      set delta-y [ get event clientY, subtract [ get component start-y ] ]
-      set new-size-ref [
-       object [
-        width [
-         global Math max, call [
-          get component start-width, add [ get delta-x ]
-         ] [
-          value 150
-         ]
-        ]
-        height [
-         global Math max, call [
-          get component start-height, add [ get delta-y ]
-         ] [
-          value 100
-         ]
-        ]
-       ]
-      ]
-      get component position, true [
-       set window-right [ get component position x, add [ get new-size-ref width ] ]
-       get window-right, > 6000, true [
-        set new-size-ref width [ value 6000, subtract [ get component position x ] ]
-       ]
-       set window-bottom [ get component position y, add [ get new-size-ref height ] ]
-       get window-bottom, > 6000, true [
-        set new-size-ref height [ value 6000, subtract [ get component position y ] ]
-       ]
-      ]
-      set component width [ get new-size-ref width ]
-      set component height [ get new-size-ref height ]
-      get component maximized, false [
-       set [ get component ] element style width [
-        template %0px [ get component width ]
-       ]
-       set [ get component ] element style height [
-        template %0px [ get component height ]
-       ]
-      ]
-      get component stage, true [
-       get component stage minimap, true [
-        get component stage minimap update-window, call [ get component ]
-       ]
-      ]
-     ]
-    ]
-   ]
-   set handle-mouseup [
-    function event [
-     set component is-resizing false
-     global document removeEventListener, tell mousemove [ get handle-mousemove ]
-     global document removeEventListener, tell mouseup [ get handle-mouseup ]
-    ]
-   ]
-   global document addEventListener, tell mousemove [ get handle-mousemove ]
-   global document addEventListener, tell mouseup [ get handle-mouseup ]
-  ]
- ]
-get component resize-handle addEventListener, tell mousedown [
   get lib drag-handler create, call [ get component ] [
    function event component [
     set component is-resizing true
-    set resize-overlay [
-     global document createElement, call div
-    ]
-    get resize-overlay classList add, call window-resize-overlay
-    global document body appendChild, tell [ get resize-overlay ]
-    object [
-     start-width [ get component width ]
-     start-height [ get component height ]
-     resize-overlay [ get resize-overlay ]
-    ]
+    set overlay [ global document createElement, call div ]
+    get overlay classList add, call window-resize-overlay
+    global document body appendChild, tell [ get overlay ]
+    object [ startWidth [ get component width ], startHeight [ get component height ], overlay [ get overlay ] ]
    ]
   ] [
-   function event start-x start-y state component delta-x delta-y [
+   function event startX startY state component deltaX deltaY [
     get component is-resizing, true [
-     set new-size-ref [
-      object [
-       width [
-        global Math max, call [
-         get state start-width, add [ get delta-x ]
-        ] [
-         value 150
-        ]
-       ]
-       height [
-        global Math max, call [
-         get state start-height, add [ get delta-y ]
-        ] [
-         value 100
-        ]
-       ]
-      ]
-     ]
+     set newWidth [ get state startWidth, add [ get deltaX ] ]
+     set newHeight [ get state startHeight, add [ get deltaY ] ]
+     set posRef [ object [ x 0, y 0 ] ]
      get component position, true [
-      set window-right [ get component position x, add [ get new-size-ref width ] ]
-      get window-right, > 6000, true [
-       set new-size-ref width [ value 6000, subtract [ get component position x ] ]
-      ]
-      set window-bottom [ get component position y, add [ get new-size-ref height ] ]
-      get window-bottom, > 6000, true [
-       set new-size-ref height [ value 6000, subtract [ get component position y ] ]
-      ]
+      set posRef x [ get component position x ]
+      set posRef y [ get component position y ]
      ]
-     set component width [ get new-size-ref width ]
-     set component height [ get new-size-ref height ]
+     set clamped [ get clamp-window-size, call [ get posRef x ] [ get posRef y ] [ get newWidth ] [ get newHeight ] ]
+     set component width [ get clamped width ]
+     set component height [ get clamped height ]
      get component maximized, false [
-      set [ get component ] element style width [
-       template %0px [ get component width ]
-      ]
-      set [ get component ] element style height [
-       template %0px [ get component height ]
-      ]
+      set component element style width [ template %0px [ get component width ] ]
+      set component element style height [ template %0px [ get component height ] ]
      ]
      get component stage, true [
       get component stage minimap, true [
@@ -543,17 +491,20 @@ get component resize-handle addEventListener, tell mousedown [
   ] [
    function state component [
     set component is-resizing false
-    get state resize-overlay parentNode, true [
-     get state resize-overlay parentNode removeChild, call [ get state resize-overlay ]
+    get state overlay parentNode, true [
+     get state overlay parentNode removeChild, call [ get state overlay ]
     ]
    ]
   ]
  ]
+ get component resize-handle addEventListener, tell mousedown [
+  get start-resize
+ ]
  get raise-window, tell
- set [ get component ] element style width [
+ set component element style width [
   template %0px [ get component width ]
  ]
- set [ get component ] element style height [
+ set component element style height [
   template %0px [ get component height ]
  ]
  set component fill [

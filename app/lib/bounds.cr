@@ -1,103 +1,132 @@
 # Bounds utility functions for geometric calculations
+# Virtual stage is 10000x10000 pixels (0,0) to (10000,10000)
 
-set calculate-scale [
- function container-width container-height bounds-width bounds-height [
-  get container-width, > 0, true [
-   get container-height, > 0, true [
-    get bounds-width, > 0, true [
-     get bounds-height, > 0, true [
-      set scale-x [ get container-width, divide [ get bounds-width ] ]
-      set scale-y [ get container-height, divide [ get bounds-height ] ]
-      set min-scale [ get scale-x ]
-      get scale-y, < [ get scale-x ], true [
-       set min-scale [ get scale-y ]
-      ]
-      get min-scale
-     ], false [
-      0
-     ]
-    ], false [
-     0
-    ]
-   ], false [
-    0
-   ]
-  ], false [
-   0
+set VIRTUAL_STAGE_SIZE 10000
+
+# Clamp a value to a range [min, max]
+# Returns min if value < min, max if value > max, otherwise value
+set clamp [
+ function value min-val max-val [
+  # Use a reference object to allow modification in conditionals
+  set ref [ object [ result [ get value ] ] ]
+  get ref result, < [ get min-val ], true [
+   set ref result [ get min-val ]
+  ]
+  get ref result, > [ get max-val ], true [
+   set ref result [ get max-val ]
+  ]
+  get ref result
+ ]
+]
+
+# Helper: ensure a max value is at least 0
+set max-with-floor [
+ function val [
+  set ref [ object [ result [ get val ] ] ]
+  get ref result, < 0, true [
+   set ref result 0
+  ]
+  get ref result
+ ]
+]
+
+# Clamp a window position to stay within virtual stage (0 to 10000-size)
+set clamp-window-position [
+ function x y width height [
+  # Calculate max positions (ensure they're at least 0)
+  set max-x-raw [ value 10000, subtract [ get width ] ]
+  set max-y-raw [ value 10000, subtract [ get height ] ]
+  set max-x [ get max-with-floor, call [ get max-x-raw ] ]
+  set max-y [ get max-with-floor, call [ get max-y-raw ] ]
+  # Clamp x and y
+  set clamped-x [ get clamp, call [ get x ] 0 [ get max-x ] ]
+  set clamped-y [ get clamp, call [ get y ] 0 [ get max-y ] ]
+  object [
+   x [ get clamped-x ]
+   y [ get clamped-y ]
   ]
  ]
 ]
 
-set merge-bounds [
- function window-bounds stage-bounds [
-  set window-min-x [ get window-bounds minX ]
-  set window-min-y [ get window-bounds minY ]
-  set window-max-x [ get window-bounds maxX ]
-  set window-max-y [ get window-bounds maxY ]
-  set stage-min-x [ get stage-bounds minX ]
-  set stage-min-y [ get stage-bounds minY ]
-  set stage-max-x [ get stage-bounds maxX ]
-  set stage-max-y [ get stage-bounds maxY ]
-  set merged-ref [
-   object [
-    minX [ get stage-min-x ]
-    minY [ get stage-min-y ]
-    maxX [ get stage-max-x ]
-    maxY [ get stage-max-y ]
-   ]
-  ]
-  get window-min-x, < [ get merged-ref minX ], true [
-   set merged-ref minX [ get window-min-x ]
-  ]
-  get window-min-y, < [ get merged-ref minY ], true [
-   set merged-ref minY [ get window-min-y ]
-  ]
-  get window-max-x, > [ get merged-ref maxX ], true [
-   set merged-ref maxX [ get window-max-x ]
-  ]
-  get window-max-y, > [ get merged-ref maxY ], true [
-   set merged-ref maxY [ get window-max-y ]
-  ]
-  set result [
-   object [
-    minX [ get merged-ref minX ]
-    minY [ get merged-ref minY ]
-    maxX [ get merged-ref maxX ]
-    maxY [ get merged-ref maxY ]
-   ]
-  ]
-  get result
- ]
-]
-
-set expand-rect [
- function bounds-ref x y width height [
-  set right [ get x, add [ get width ] ]
-  set bottom [ get y, add [ get height ] ]
-  get bounds-ref minX, is null [
-   set bounds-ref minX [ get x ]
-   set bounds-ref minY [ get y ]
-   set bounds-ref maxX [ get right ]
-   set bounds-ref maxY [ get bottom ]
-  ], false [
-   get bounds-ref minX, > [ get x ], false [
-    set bounds-ref minX [ get x ]
-   ]
-   get bounds-ref minY, > [ get y ], false [
-    set bounds-ref minY [ get y ]
-   ]
-   get bounds-ref maxX, < [ get right ], false [
-    set bounds-ref maxX [ get right ]
-   ]
-   get bounds-ref maxY, < [ get bottom ], false [
-    set bounds-ref maxY [ get bottom ]
-   ]
+# Clamp window size (minimum 100x100, maximum fits in stage from position)
+set clamp-window-size [
+ function x y width height [
+  set max-width [ value 10000, subtract [ get x ] ]
+  set max-height [ value 10000, subtract [ get y ] ]
+  # Apply minimum size and maximum
+  set clamped-width [ get clamp, call [ get width ] 100 [ get max-width ] ]
+  set clamped-height [ get clamp, call [ get height ] 100 [ get max-height ] ]
+  object [
+   width [ get clamped-width ]
+   height [ get clamped-height ]
   ]
  ]
 ]
 
+# Clamp viewport position within virtual stage
+set clamp-viewport-position [
+ function x y viewport-width viewport-height [
+  # Calculate max positions (ensure they're at least 0)
+  set max-x-raw [ value 10000, subtract [ get viewport-width ] ]
+  set max-y-raw [ value 10000, subtract [ get viewport-height ] ]
+  set max-x [ get max-with-floor, call [ get max-x-raw ] ]
+  set max-y [ get max-with-floor, call [ get max-y-raw ] ]
+  # Clamp x and y
+  set clamped-x [ get clamp, call [ get x ] 0 [ get max-x ] ]
+  set clamped-y [ get clamp, call [ get y ] 0 [ get max-y ] ]
+  object [
+   x [ get clamped-x ]
+   y [ get clamped-y ]
+  ]
+ ]
+]
+
+# Calculate minimap scale (minimap-size / 10000)
+set calculate-minimap-scale [
+ function minimap-size [
+  get minimap-size, divide 10000
+ ]
+]
+
+# Convert stage coordinates to minimap coordinates
+set stage-to-minimap [
+ function stage-x stage-y scale [
+  object [
+   x [ get stage-x, multiply [ get scale ] ]
+   y [ get stage-y, multiply [ get scale ] ]
+  ]
+ ]
+]
+
+# Convert minimap coordinates to stage coordinates
+set minimap-to-stage [
+ function minimap-x minimap-y scale [
+  object [
+   x [ get minimap-x, divide [ get scale ] ]
+   y [ get minimap-y, divide [ get scale ] ]
+  ]
+ ]
+]
+
+# Scale dimensions for minimap
+set scale-dimensions [
+ function width height scale [
+  object [
+   width [ get width, multiply [ get scale ] ]
+   height [ get height, multiply [ get scale ] ]
+  ]
+ ]
+]
+
+# Export module
 object [
- calculate-scale [ get calculate-scale ]
- merge-bounds [ get merge-bounds ]
- expand-rect [ get expand-rect ]
+ VIRTUAL_STAGE_SIZE [ get VIRTUAL_STAGE_SIZE ]
+ clamp [ get clamp ]
+ clamp-window-position [ get clamp-window-position ]
+ clamp-window-size [ get clamp-window-size ]
+ clamp-viewport-position [ get clamp-viewport-position ]
+ calculate-minimap-scale [ get calculate-minimap-scale ]
+ stage-to-minimap [ get stage-to-minimap ]
+ minimap-to-stage [ get minimap-to-stage ]
+ scale-dimensions [ get scale-dimensions ]
 ]

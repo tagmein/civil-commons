@@ -3,35 +3,35 @@
 
 # Create a drag handler function
 # component: the component object (captured in closure)
-# on-start: function(event, component) - called on mousedown, returns initial state object
-# on-move: function(event, start-x, start-y, state, component, delta-x, delta-y) - called on mousemove
-# on-end: function(state, component) - called on mouseup for cleanup
+# onStart: function(event, component) - called on mousedown, returns initial state object
+# onMove: function(event, startX, startY, state, component, deltaX, deltaY) - called on mousemove
+# onEnd: function(state, component) - called on mouseup for cleanup
 # Returns a function that can be used as a mousedown event handler
 set create [
- function component on-start on-move on-end [
+ function component onStart onMove onEnd [
   function event [
    get event stopPropagation, tell
    get event preventDefault, tell
-   set start-x [ get event clientX ]
-   set start-y [ get event clientY ]
-   set state-result [ get on-start, call [ get event ] [ get component ] ]
-   set state [ get state-result ]
-   set handle-mousemove [
+   set startX [ get event clientX ]
+   set startY [ get event clientY ]
+   set stateResult [ get onStart, call [ get event ] [ get component ] ]
+   set state [ get stateResult ]
+   set handleMousemove [
     function event [
-     set delta-x [ get event clientX, subtract [ get start-x ] ]
-     set delta-y [ get event clientY, subtract [ get start-y ] ]
-     get on-move, call [ get event ] [ get start-x ] [ get start-y ] [ get state ] [ get component ] [ get delta-x ] [ get delta-y ]
+     set deltaX [ get event clientX, subtract [ get startX ] ]
+     set deltaY [ get event clientY, subtract [ get startY ] ]
+     get onMove, call [ get event ] [ get startX ] [ get startY ] [ get state ] [ get component ] [ get deltaX ] [ get deltaY ]
     ]
    ]
-   set handle-mouseup [
+   set handleMouseup [
     function event [
-     get on-end, call [ get state ] [ get component ]
-     global document removeEventListener, tell mousemove [ get handle-mousemove ]
-     global document removeEventListener, tell mouseup [ get handle-mouseup ]
+     get onEnd, call [ get state ] [ get component ]
+     global document removeEventListener, tell mousemove [ get handleMousemove ]
+     global document removeEventListener, tell mouseup [ get handleMouseup ]
     ]
    ]
-   global document addEventListener, tell mousemove [ get handle-mousemove ]
-   global document addEventListener, tell mouseup [ get handle-mouseup ]
+   global document addEventListener, tell mousemove [ get handleMousemove ]
+   global document addEventListener, tell mouseup [ get handleMouseup ]
   ]
  ]
 ]

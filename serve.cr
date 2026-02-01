@@ -52,7 +52,7 @@ set handler [
  function request response [
   set respond [
    function status value mimeType [
-    set [ get response ] statusCode [ get status ]
+    set response statusCode [ get status ]
     get mimeType, true [
      get response setHeader, call Content-Type [ get mimeType ]
     ]

@@ -13,7 +13,7 @@ set dispatch [
 
 set register [
  function name callback [
-  set [ get registry ] [ get name ] [ get callback ]
+  set registry [ get name ] [ get callback ]
   log CONDUCTOR REGISTERED [ get name ]
  ]
 ]

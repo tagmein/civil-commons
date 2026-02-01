@@ -46,6 +46,10 @@
 - Use `set` for textContent: `set element textContent 'text'`
 - Use `set` for style properties: `set element style display none` (no quotes unless value contains `#`, `'`, or space)
 - **NOT** `get element style property, set 'value'` - this is incorrect syntax
+- **Simplified syntax**: `set` treats the first argument as a getter if there's more than one path segment
+  - `set [ get window ] status-bar value` can be written as `set window status-bar value`
+  - `set [ get component ] element style transform value` can be written as `set component element style transform value`
+  - This works when setting nested properties - `set` automatically treats the first identifier as a getter
 
 ### Function Calls
 - Call stored functions: `get function-name, call args`
@@ -78,6 +82,24 @@
   - `get element, is [ get target ]` - equality check (often more readable than `=`)
 - Can be used in conditionals: `get new-width, < 100, true [ set new-width 100 ]`
 
+### Boolean Negation (`not` vs `false [ true ]`)
+- **`not`** - Modifies the return value to invert it (true becomes false, false becomes true)
+  - Example: `get w, is [ get component ], not` - returns true if w is NOT component
+  - Use `not` when you need to invert a boolean value for filtering or conditions
+- **`false [ true ]`** - Runs the true block if the condition is false, but does NOT affect the return value
+  - Example: `get w, is [ get component ], false [ true ]` - if false, runs true block but still returns false
+  - This is for side effects, not for inverting the return value
+- **Verbose negation**: Use `pick` if you need explicit control: `pick [ get w, is [ get component ] ] false [ true ], true [ false ]`
+- **For filtering arrays**: Use `not` to keep items where condition is false: `filter [ function x [ get x, is [ get target ], not ] ]`
+
+### Null Values
+- **NEVER** use `null` as a Crown command - it doesn't exist as a command
+- You **may** use `value null` to get the null value when needed
+- **For conditional false blocks**: If you don't need to do anything in a `false` block, omit it entirely
+  - **WRONG**: `get condition, true [ do-something ], false [ null ]`
+  - **CORRECT**: `get condition, true [ do-something ]` (just omit the false block)
+  - If you need to return null from a function, use `value null` or omit the block and let it return undefined
+
 ### Conditionals in `pick`
 - Use `value [ condition ]` NOT `do [ condition ]` in pick statements
 - `value` returns the evaluated result, `do` discards it
@@ -96,6 +118,21 @@
 - Set individual properties: `set element style fontSize '24px'`
 - Set multiple properties separately, not as object
 - Quote values only if they contain `#`, `'`, or spaces
+
+### Object Literal Property Separators
+- **Same line**: Properties on the same line MUST be comma-separated
+  - **CORRECT**: `object [ x 0, y 0 ]`
+  - **WRONG**: `object [ x 0 y 0 ]` (missing comma)
+  - **CORRECT**: `object [ startX [ get x ], startY [ get y ] ]`
+  - **WRONG**: `object [ startX [ get x ] startY [ get y ] ]` (missing comma)
+- **Separate lines**: Properties on separate lines use newline as separator (no comma needed)
+  ```
+  object [
+   x 0
+   y 0
+  ]
+  ```
+- This applies to all object literals, including nested ones
 
 ## Project Structure
 
@@ -197,3 +234,4 @@ get my-component method-name, call args  # call component methods
 9. **Never** use `get global` - use `global` directly (e.g., `global document`, `global fetch`)
 10. **Never** use `global console log` - use the built-in `log` command instead (e.g., `log [ get event ]`)
 11. **Never** use word-based comparisons (`less`, `greater`, `equal`) - use operators (`<`, `>`, `=`, `<=`, `>=`) instead
+12. **Always** comma-separate object properties on the same line: `object [ x 0, y 0 ]` NOT `object [ x 0 y 0 ]`
