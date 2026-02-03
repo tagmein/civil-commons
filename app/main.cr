@@ -33,11 +33,16 @@ set lib [
 set components [
  get package
  call components [
-  list action-bar stage menu window window-title-buttons minimap
+  list action-bar stage menu window window-title-buttons minimap tab-bar
  ]
 ]
 
 set main [ object ]
+
+# Load session service first (needed by tabs and other modules)
+set main session-service [
+ load ./modules/session/service.cr, point
+]
 
 list tabs menu stage status startup, each [
  function x [
@@ -49,7 +54,7 @@ list tabs menu stage status startup, each [
  ]
 ]
 
-list commons/about log/main, each [
+list commons/about log/main session/rename session/archive session/recent, each [
  function x [
   load [ template ./modules/%0.cr [ get x ] ], point
  ]

@@ -1,5 +1,17 @@
 set ( fs, path ) [ global import, call ( fs/promises, path ) ]
 
+# Flag to indicate test mode - modules can check this to avoid side effects
+set is_test true
+
+# Get test filter from environment variable
+# Usage: TEST_FILTER=path ./crown tests.cr
+# Examples:
+#   ./crown tests.cr                                    - run all tests
+#   TEST_FILTER=components ./crown tests.cr       - run only component tests  
+#   TEST_FILTER=api ./crown tests.cr              - run only API tests
+#   TEST_FILTER=components/tab-bar.spec.cr ./crown tests.cr - run single test file
+set test-filter [ global process env TEST_FILTER ]
+
 set find-spec-files [
  function dir [
   set files [ list ]
@@ -117,8 +129,41 @@ set to-be-false [
  function actual [
   get actual, false [
    true
-  ], false [
+  ], true [
    throw [ template 'Expected %0 to be false' [ get actual ] ]
+  ]
+ ]
+]
+
+# Matcher for greater than
+set to-be-greater-than [
+ function actual expected [
+  get actual, > [ get expected ], true [
+   true
+  ], false [
+   error [ template 'Expected %0 to be greater than %1' [ get actual ] [ get expected ] ]
+  ]
+ ]
+]
+
+# Matcher for less than
+set to-be-less-than [
+ function actual expected [
+  get actual, < [ get expected ], true [
+   true
+  ], false [
+   error [ template 'Expected %0 to be less than %1' [ get actual ] [ get expected ] ]
+  ]
+ ]
+]
+
+# Matcher for array/string contains
+set to-contain [
+ function actual expected [
+  get actual indexOf, call [ get expected ], >= 0, true [
+   true
+  ], false [
+   error [ template 'Expected %0 to contain %1' [ get actual ] [ get expected ] ]
   ]
  ]
 ]
@@ -152,11 +197,88 @@ set to-be-defined [
  ]
 ]
 
+# Matcher that expects a value to be an array
+set to-be-array [
+ function actual [
+  global Array isArray, call [ get actual ], true [
+   true
+  ], false [
+   error [ template 'Expected %0 to be an array' [ get actual ] ]
+  ]
+ ]
+]
+
+# Matcher for array length
+set to-have-length [
+ function actual expected [
+  get actual length, is [ get expected ], true [
+   true
+  ], false [
+   error [ template 'Expected array length %0 to equal %1' [ get actual length ] [ get expected ] ]
+  ]
+ ]
+]
+
+# Filter spec files based on test-filter argument
+set filter-spec-files [
+ function files [
+  get test-filter, false [
+   # No filter - return all files
+   get files
+  ], true [
+   # Filter files that match the path
+   get files, filter [
+    function file [
+     get file, at startsWith, call [ get test-filter ]
+    ]
+   ]
+  ]
+ ]
+]
+
 set run-tests [
  function [
-  log 'Running tests...'
+  get test-filter, true [
+   log [ template 'Running tests matching: %0' [ get test-filter ] ]
+  ], false [
+   log 'Running all tests...'
+  ]
   log ''
-  set spec-files [ get find-spec-files, call tests ]
+  
+  # Determine base directory - search from project root
+  set base-dir '.'
+  
+  set spec-files [ list ]
+  
+  get test-filter, true [
+   # Check if filter is a specific .spec.cr file
+   get test-filter, at endsWith, call .spec.cr, true [
+    # Single file specified
+    get spec-files push, call [ get test-filter ]
+   ], false [
+    # Assume it's a directory - search within it
+    set found-files [ get find-spec-files, call [ get test-filter ] ]
+    get found-files, each [
+     function f [
+      get spec-files push, call [ get f ]
+     ]
+    ]
+   ]
+  ], false [
+   # No filter - find all spec files
+   set all-files [ get find-spec-files, call [ get base-dir ] ]
+   get all-files, each [
+    function f [
+     get spec-files push, call [ get f ]
+    ]
+   ]
+  ]
+  
+  get spec-files length, = 0, true [
+   log 'No test files found matching filter.'
+   global process exit, call 1
+  ]
+  
   get spec-files, map [
    function file [
     log [ template 'Running %0...' [ get file ] ]

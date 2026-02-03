@@ -2,7 +2,20 @@ set ( fs, http ) [ global import, call ( fs/promises, node:http ) ]
 
 set port [ global process env PORT, default 4567 ]
 
-set i [ function x [
+# Load shared I/O module - variables cascade to loaded API routes
+set io [ load ./api/io.cr, point ]
+set ( data-path, i, o, ij, oj, ensure-dir, file-exists, generate-id ) [
+ get io ( data-path, i, o, ij, oj, ensure-dir, file-exists, generate-id )
+]
+
+# Load API route handlers
+set api-sessions-create [ load ./api/sessions-create.cr, point ]
+set api-sessions-list [ load ./api/sessions-list.cr, point ]
+set api-sessions-get [ load ./api/sessions-get.cr, point ]
+set api-sessions-update [ load ./api/sessions-update.cr, point ]
+
+# Helper to read raw file (without toString for binary files)
+set i-raw [ function x [
  get fs readFile, call [ get x ]
 ] ]
 
@@ -48,6 +61,52 @@ set get-mime-type [
  ]
 ]
 
+# Read request body as string
+set read-body [ function request [
+ global Promise, new [
+  function resolve reject [
+   set chunks [ list ]
+   get request on, call data [
+    function chunk [
+     get chunks push, call [ get chunk ]
+    ]
+   ]
+   get request on, call end [
+    function [
+     set body-string [
+      global Buffer concat, call [ get chunks ]
+      at toString, call utf-8
+     ]
+     get resolve, call [ get body-string ]
+    ]
+   ]
+   get request on, call error [
+    function err [
+     get reject, call [ get err ]
+    ]
+   ]
+  ]
+ ]
+] ]
+
+# Parse JSON body safely
+set parse-json-body [ function body [
+ set result [ object [ data null, error null ] ]
+ get body length, > 0, true [
+  try [
+   set result data [ global JSON parse, call [ get body ] ]
+  ] [
+   set result error 'Invalid JSON'
+  ]
+ ]
+ get result
+] ]
+
+# Extract session ID from URL path like /api/sessions/abc123
+set extract-session-id [ function url [
+ get url, at split, call /, at 3
+] ]
+
 set handler [
  function request response [
   set respond [
@@ -63,24 +122,63 @@ set handler [
   log [ get request method ] [ get request url ]
 
   try [
-   # Routes
-   get request url, pick [
-    is /
-    get respond, call 200 [ get i, call index.html ] text/html
+   # API Routes - handle /api/sessions endpoints
+   set handled [ object [ value false ] ]
+   
+   get request url, is /api/sessions, true [
+    get request method, is POST, true [
+     set handled value true
+     get api-sessions-create, call [ get request ] [ get respond ]
+    ], false [
+     get request method, is GET, true [
+      set handled value true
+      get api-sessions-list, call [ get request ] [ get respond ]
+     ]
+    ]
+   ]
+   
+   get handled value, false [
+    get request url, at startsWith, call /api/sessions/, true [
+     set session-id [ get extract-session-id, call [ get request url ] ]
+     get request method, is GET, true [
+      set handled value true
+      get api-sessions-get, call [ get request ] [ get respond ] [ get session-id ]
+     ], false [
+      get request method, is PATCH, true [
+       set handled value true
+       set body-text [ get read-body, call [ get request ] ]
+       set parsed [ get parse-json-body, call [ get body-text ] ]
+       get parsed error, true [
+        get respond, call 400 [
+         global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+        ] application/json
+       ], false [
+        get api-sessions-update, call [ get request ] [ get respond ] [ get session-id ] [ get parsed data ]
+       ]
+      ]
+     ]
+    ]
+   ]
+   
+   # Static routes
+   get handled value, false [
+    get request url, pick [
+     is /
+    get respond, call 200 [ get i-raw, call index.html ] text/html
    ] [
     is /favicon.ico
-    get respond, call 200 [ get i, call favicon.ico ] image/x-icon
+    get respond, call 200 [ get i-raw, call favicon.ico ] image/x-icon
    ] [
     is /crown.js
     get respond, call 200 [
-     get i, call crown, 
+     get i-raw, call crown, 
      at toString, call utf-8
      at split, call '/* UNIFIED */ ', at 1
     ] application/javascript
    ] [
     is /web.cr
     get respond, call 200 [
-     get i, call ./web.cr ] text/plain
+     get i-raw, call ./web.cr ] text/plain
    ] [
     value [ at startsWith, call /app ]
     set file-path [
@@ -90,7 +188,7 @@ set handler [
      get get-mime-type, call [ get file-path ]
     ]
     get respond, call 200 [
-     get i, call [ get file-path ]
+     get i-raw, call [ get file-path ]
     ] [ get mime-type ]
    ] [
     value [ at startsWith, call /core ]
@@ -101,24 +199,45 @@ set handler [
      get get-mime-type, call [ get file-path ]
     ]
     get respond, call 200 [
-     get i, call [ get file-path ]
+     get i-raw, call [ get file-path ]
     ] [ get mime-type ]
    ] [
     true 
-    get respond, call 404 [ object [ error 'Not Found' ] ]
+    get respond, call 404 [
+     global JSON stringify, call [ object [ error 'Not Found' ] ]
+    ] application/json
+   ]
    ]
   ] [
-   get respond, call 500 [ object [ error [ current_error ] ] ]
+   log Error: [ current_error ]
+   get respond, call 500 [
+    global JSON stringify, call [ object [ error [ current_error ] ] ]
+   ] application/json
   ]
  ]
 ]
 
-set server [
- get http createServer, call [ get handler ]
+# Check if running in test mode
+# is_test is set by tests.cr before loading spec files
+set test-mode [ get is_test, default false ]
+
+# Only start the server if NOT in test mode
+get test-mode, = true, false [
+ set server [
+  get http createServer, call [ get handler ]
+ ]
+
+ get server listen, call [ get port ] [
+  function [
+   log server listening on port [ get port ]
+  ]
+ ]
 ]
 
-get server listen, call [ get port ] [
- function [
-  log server listening on port [ get port ]
- ]
+# Export object with testable functions (always returned)
+object [
+ get-mime-type
+ parse-json-body
+ extract-session-id
+ handler
 ]

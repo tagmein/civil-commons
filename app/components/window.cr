@@ -512,5 +512,6 @@ function title height width [
    get component content appendChild, call [ get content-element ]
   ]
  ]
+ set component close [ get close-window ]
  get component
 ]
