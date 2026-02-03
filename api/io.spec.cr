@@ -4,7 +4,7 @@
 set fs [ global import, call fs/promises ]
 
 # Create test directory
-set test-data-path './tests/api/test-data-io'
+set test-data-path './test-data-io'
 
 # Clean up test data
 set cleanup [ function [

@@ -6,7 +6,7 @@
 set fs [ global import, call fs/promises ]
 
 # Setup test data directory - use unique path for this test file
-set test-data-path './tests/api/test-data-list'
+set test-data-path './test-data-list'
 
 # Clean up function
 set cleanup-list [ function [

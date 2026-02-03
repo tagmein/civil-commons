@@ -3,7 +3,7 @@
 set fs [ global import, call fs/promises ]
 
 # Setup test data directory
-set test-data-path './tests/api/test-data-update'
+set test-data-path './test-data-update'
 
 # Load io module and override data-path
 set io [ load ./io.cr, point ]

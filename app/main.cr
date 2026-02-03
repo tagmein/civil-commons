@@ -60,4 +60,9 @@ list commons/about log/main session/rename session/archive session/recent, each 
  ]
 ]
 
+# All handlers are now registered
+# Set up event logging and replay saved events
+get main session-service setup-event-logging, call
+get main session-service replay-events, call
+
 get main stage resize, tell

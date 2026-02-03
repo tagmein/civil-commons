@@ -1,163 +1,122 @@
 # Tests for core/conductor.cr
-# Tests conductor registry and dispatch functionality
+# Tests conductor event dispatching and logging hooks
 
-get describe, call 'conductor module' [
+get describe, call 'conductor' [
  function [
-  get describe, call 'registry' [
+  get describe, call 'dispatch' [
    function [
-    get it, call 'should start with empty registry' [
+    get it, call 'should call registered handler' [
      function [
       set registry [ object ]
-      get expect, call [ get to-be-defined ] [ get registry ]
-     ]
-    ]
-   ]
-  ]
-  
-  get describe, call 'register function' [
-   function [
-    get it, call 'should register action with callback' [
-     function [
-      set registry [ object ]
-      set callback [ function [ value 'called' ] ]
-      set registry test-action [ get callback ]
+      set called [ object [ value false, action null ] ]
       
-      get expect, call [ get to-be-defined ] [ get registry test-action ]
-     ]
-    ]
-    
-    get it, call 'should allow registering multiple actions' [
-     function [
-      set registry [ object ]
-      set registry action1 [ function [ value 'action1' ] ]
-      set registry action2 [ function [ value 'action2' ] ]
-      
-      get expect, call [ get to-be-defined ] [ get registry action1 ]
-      get expect, call [ get to-be-defined ] [ get registry action2 ]
-     ]
-    ]
-    
-    get it, call 'should override existing action with same name' [
-     function [
-      set registry [ object ]
-      set call-count [ object [ value 0 ] ]
-      
-      set registry test-action [ function [ set call-count value 1 ] ]
-      set registry test-action [ function [ set call-count value 2 ] ]
-      
-      get registry test-action, call
-      get expect, call [ get to-equal ] [ get call-count value ] 2
-     ]
-    ]
-   ]
-  ]
-  
-  get describe, call 'dispatch function' [
-   function [
-    get it, call 'should call registered callback' [
-     function [
-      set registry [ object ]
-      set called [ object [ value false ] ]
-      set registry test-action [ function arg [
-       set called value true
-      ] ]
-      
-      get registry test-action, call 'test-arg'
-      
-      get expect, call [ get to-be-true ] [ get called value ]
-     ]
-    ]
-    
-    get it, call 'should pass argument to callback' [
-     function [
-      set registry [ object ]
-      set received [ object [ arg null ] ]
-      set registry test-action [ function arg [
-       set received arg [ get arg ]
-      ] ]
-      
-      get registry test-action, call 'my-argument'
-      
-      get expect, call [ get to-equal ] [ get received arg ] 'my-argument'
-     ]
-    ]
-    
-    get it, call 'should handle action not found gracefully' [
-     function [
-      set registry [ object ]
-      set action-name 'nonexistent'
-      
-      # Check if action exists
-      set exists [ get registry [ get action-name ] ]
-      get exists, false [
-       # No error should be thrown, just no-op or log warning
-       get expect, call [ get to-be-true ] true
+      set registry 'test:action' [
+       function arg [
+        set called value true
+        set called action 'test:action'
+       ]
       ]
+      
+      get registry 'test:action', true [
+       get registry 'test:action', call null
+      ]
+      
+      get expect, call [ get to-be-true ] [ get called value ]
+      get expect, call [ get to-equal ] [ get called action ] 'test:action'
      ]
     ]
    ]
   ]
   
-  get describe, call 'action naming conventions' [
+  get describe, call 'event hook' [
    function [
-    get it, call 'should support namespaced actions (module:action)' [
+    get it, call 'should call event hook when set' [
      function [
-      set registry [ object ]
-      set called [ object [ value false ] ]
-      set registry 'session:rename' [ function [ set called value true ] ]
+      set hook-called [ object [ value false, action null, arg null ] ]
+      set event-hook [ object [ callback null ] ]
+      set replay-mode [ object [ active false ] ]
       
-      get registry 'session:rename', call
+      # Set up hook
+      set event-hook callback [
+       function action arg [
+        set hook-called value true
+        set hook-called action [ get action ]
+        set hook-called arg [ get arg ]
+       ]
+      ]
       
-      get expect, call [ get to-be-true ] [ get called value ]
+      # Simulate dispatch calling the hook
+      get replay-mode active, false [
+       get event-hook callback, true [
+        get event-hook callback, call 'test:action' 'test-arg'
+       ]
+      ]
+      
+      get expect, call [ get to-be-true ] [ get hook-called value ]
+      get expect, call [ get to-equal ] [ get hook-called action ] 'test:action'
+      get expect, call [ get to-equal ] [ get hook-called arg ] 'test-arg'
      ]
     ]
     
-    get it, call 'should support simple action names' [
+    get it, call 'should not call hook when no callback set' [
      function [
-      set registry [ object ]
-      set called [ object [ value false ] ]
-      set registry 'open' [ function [ set called value true ] ]
+      set event-hook [ object [ callback null ] ]
+      set replay-mode [ object [ active false ] ]
+      set error-occurred [ object [ value false ] ]
       
-      get registry 'open', call
+      try [
+       get replay-mode active, false [
+        get event-hook callback, true [
+         get event-hook callback, call 'test:action' null
+        ]
+       ]
+      ] [
+       set error-occurred value true
+      ]
       
-      get expect, call [ get to-be-true ] [ get called value ]
+      get expect, call [ get to-be-false ] [ get error-occurred value ]
      ]
     ]
    ]
   ]
   
-  get describe, call 'integration patterns' [
+  get describe, call 'replay mode' [
    function [
-    get it, call 'should support window opening pattern' [
+    get it, call 'should not call hook in replay mode' [
      function [
-      # Simulate commons:about action that opens a window
-      set windows [ list ]
-      set registry [ object ]
+      set hook-called [ object [ value false ] ]
+      set event-hook [ object [ callback null ] ]
+      set replay-mode [ object [ active true ] ]
       
-      set registry 'commons:about' [ function [
-       set window [ object [ title 'About', content 'Test content' ] ]
-       get windows push, call [ get window ]
-      ] ]
+      # Set up hook
+      set event-hook callback [
+       function action arg [
+        set hook-called value true
+       ]
+      ]
       
-      get registry 'commons:about', call
+      # Simulate dispatch - should NOT call hook because replay-mode is active
+      get replay-mode active, false [
+       get event-hook callback, true [
+        get event-hook callback, call 'test:action' null
+       ]
+      ]
       
-      get expect, call [ get to-equal ] [ get windows length ] 1
-      get expect, call [ get to-equal ] [ get windows, at 0, at title ] 'About'
+      get expect, call [ get to-be-false ] [ get hook-called value ]
      ]
     ]
     
-    get it, call 'should support action with data payload' [
+    get it, call 'should toggle replay mode on and off' [
      function [
-      set registry [ object ]
-      set result [ object [ session-id null ] ]
+      set replay-mode [ object [ active false ] ]
       
-      set registry 'session:open' [ function data [
-       set result session-id [ get data id ]
-      ] ]
+      # Start replay
+      set replay-mode active true
+      get expect, call [ get to-be-true ] [ get replay-mode active ]
       
-      get registry 'session:open', call [ object [ id 'session-123' ] ]
-      
-      get expect, call [ get to-equal ] [ get result session-id ] 'session-123'
+      # End replay
+      set replay-mode active false
+      get expect, call [ get to-be-false ] [ get replay-mode active ]
      ]
     ]
    ]

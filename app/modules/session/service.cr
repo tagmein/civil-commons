@@ -9,6 +9,7 @@ set listeners [ object [
  change [ list ]
  tabsChange [ list ]
  sessionRenamed [ list ]
+ logChanged [ list ]
 ] ]
 
 # Trigger event listeners
@@ -228,6 +229,93 @@ set initialize [ function [
  ]
 ] ]
 
+# ==========================================
+# Event Log Functions
+# ==========================================
+
+# Log an event to the current session
+set log-event [ function action arg [
+ set session-id [ get get-current-session-id, call ]
+ get session-id, true [
+  global fetch, call [ template '/api/sessions/%0/log' [ get session-id ] ] [
+   object [
+    method 'POST'
+    headers [ object [ Content-Type 'application/json' ] ]
+    body [ global JSON stringify, call [ object [ action [ get action ], arg [ get arg ] ] ] ]
+   ]
+  ]
+  at json, call
+  # Emit logChanged event so UI can update
+  get emit, call logChanged null
+ ]
+] ]
+
+# Get the event log for the current session
+set get-event-log [ function [
+ set session-id [ get get-current-session-id, call ]
+ set result-ref [ object [ log [ list ] ] ]
+ get session-id, true [
+  try [
+   set result-ref log [
+    global fetch, call [ template '/api/sessions/%0/log' [ get session-id ] ]
+    at json, call
+   ]
+  ] [
+   # Failed to fetch log, keep empty
+  ]
+ ]
+ get result-ref log
+] ]
+
+# Delete an event from the current session's log
+set delete-event [ function index [
+ set session-id [ get get-current-session-id, call ]
+ set result-ref [ object [ result null ] ]
+ get session-id, true [
+  try [
+   set result-ref result [
+    global fetch, call [ template '/api/sessions/%0/log/%1' [ get session-id ] [ get index ] ] [
+     object [ method 'DELETE' ]
+    ]
+    at json, call
+   ]
+   # Emit logChanged event so UI can update
+   get emit, call logChanged null
+  ] [
+   # Failed to delete
+  ]
+ ]
+ get result-ref result
+] ]
+
+# Replay all events in the current session's log
+# This is called at startup after all handlers are registered
+set replay-events [ function [
+ set log [ get get-event-log, call ]
+ 
+ # Tell conductor we're in replay mode (don't re-log these events)
+ get conductor start-replay, call
+ 
+ # Dispatch each event
+ get log, each [
+  function event [
+   get conductor dispatch, call [ get event action ] [ get event arg ]
+  ]
+ ]
+ 
+ # Exit replay mode
+ get conductor end-replay, call
+] ]
+
+# Set up the conductor event hook to log events
+set setup-event-logging [ function [
+ get conductor set-event-hook, call [
+  function action arg [
+   get log-event, call [ get action ] [ get arg ]
+  ]
+ ]
+] ]
+
 # Export service object
 object [
  on
@@ -242,4 +330,9 @@ object [
  close-session
  open-session
  initialize
+ log-event
+ get-event-log
+ delete-event
+ replay-events
+ setup-event-logging
 ]
