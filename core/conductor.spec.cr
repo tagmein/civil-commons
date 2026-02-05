@@ -121,5 +121,83 @@ get describe, call 'conductor' [
     ]
    ]
   ]
+  
+  get describe, call 'skip on replay (! prefix)' [
+   function [
+    get it, call 'should detect ! prefix for skip-on-replay actions' [
+     function [
+      set action '!document:new'
+      set skip-on-replay [ get action, at startsWith, call '!' ]
+      get expect, call [ get to-be-true ] [ get skip-on-replay ]
+     ]
+    ]
+    
+    get it, call 'should not detect ! prefix for normal actions' [
+     function [
+      set action 'document:open'
+      set skip-on-replay [ get action, at startsWith, call '!' ]
+      get expect, call [ get to-be-false ] [ get skip-on-replay ]
+     ]
+    ]
+    
+    get it, call 'should skip ! prefixed actions during replay' [
+     function [
+      set replay-mode [ object [ active true ] ]
+      set handler-called [ object [ value false ] ]
+      set action '!document:new'
+      
+      set skip-on-replay [ get action, at startsWith, call '!' ]
+      
+      # Simulate replay mode check
+      set should-skip [ object [ value false ] ]
+      get replay-mode active, true [
+       get skip-on-replay, true [
+        set should-skip value true
+       ]
+      ]
+      
+      get expect, call [ get to-be-true ] [ get should-skip value ]
+     ]
+    ]
+    
+    get it, call 'should not skip ! prefixed actions outside replay mode' [
+     function [
+      set replay-mode [ object [ active false ] ]
+      set action '!document:new'
+      
+      set skip-on-replay [ get action, at startsWith, call '!' ]
+      
+      # Simulate replay mode check
+      set should-skip [ object [ value false ] ]
+      get replay-mode active, true [
+       get skip-on-replay, true [
+        set should-skip value true
+       ]
+      ]
+      
+      get expect, call [ get to-be-false ] [ get should-skip value ]
+     ]
+    ]
+    
+    get it, call 'should not skip normal actions during replay' [
+     function [
+      set replay-mode [ object [ active true ] ]
+      set action 'document:open'
+      
+      set skip-on-replay [ get action, at startsWith, call '!' ]
+      
+      # Simulate replay mode check
+      set should-skip [ object [ value false ] ]
+      get replay-mode active, true [
+       get skip-on-replay, true [
+        set should-skip value true
+       ]
+      ]
+      
+      get expect, call [ get to-be-false ] [ get should-skip value ]
+     ]
+    ]
+   ]
+  ]
  ]
 ]

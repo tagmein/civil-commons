@@ -8,21 +8,38 @@ set event-hook [ object [ callback null ] ]
 
 set dispatch [
  function action arg [
-  set handler [ get registry [ get action ] ]
-  get handler, false [
-   log CONDUCTOR WARNING NO MATCH FOR [ get action ]
-  ], true [ 
-   log CONDUCTOR DISPATCH [ get action ]
-   
-   # Forward to event hook if set and not in replay mode
-   get replay-mode active, false [
-    get event-hook callback, true [
-     get event-hook callback, call [ get action ] [ get arg ]
-    ]
+  # Check if action starts with ! (skip on replay)
+  set skip-on-replay [ get action, at startsWith, call '!' ]
+  
+  # Use reference pattern to track if we should execute
+  set should-execute [ object [ value true ] ]
+  
+  # In replay mode, skip actions prefixed with !
+  get replay-mode active, true [
+   get skip-on-replay, true [
+    log CONDUCTOR REPLAY SKIP [ get action ]
+    set should-execute value false
    ]
-   
-   # Call the handler
-   get handler, call [ get arg ]
+  ]
+  
+  # Only execute if not skipped
+  get should-execute value, true [
+   set handler [ get registry [ get action ] ]
+   get handler, false [
+    log CONDUCTOR WARNING NO MATCH FOR [ get action ]
+   ], true [ 
+    log CONDUCTOR DISPATCH [ get action ]
+    
+    # Forward to event hook if set and not in replay mode
+    get replay-mode active, false [
+     get event-hook callback, true [
+      get event-hook callback, call [ get action ] [ get arg ]
+     ]
+    ]
+    
+    # Call the handler
+    get handler, call [ get arg ]
+   ]
   ]
  ]
 ]
@@ -33,6 +50,11 @@ set register [
   log CONDUCTOR REGISTERED [ get name ]
  ]
 ]
+
+# Check if an action is registered
+set is-registered [ function name [
+ get registry [ get name ], true [ value true ], false [ value false ]
+] ]
 
 # Set the event logging hook
 set set-event-hook [ function callback [
@@ -52,6 +74,7 @@ set end-replay [ function [
 object [
  dispatch
  register
+ is-registered
  set-event-hook
  start-replay
  end-replay

@@ -44,6 +44,11 @@ set main session-service [
  load ./modules/session/service.cr, point
 ]
 
+# Load document service (needed by document modules)
+set main document-service [
+ load ./modules/document/service.cr, point
+]
+
 list tabs menu stage status startup, each [
  function x [
   set main [ get x ] [
@@ -54,7 +59,7 @@ list tabs menu stage status startup, each [
  ]
 ]
 
-list commons/about log/main session/rename session/archive session/recent, each [
+list commons/about log/main session/rename session/archive session/recent document/window document/recent document/rename, each [
  function x [
   load [ template ./modules/%0.cr [ get x ] ], point
  ]

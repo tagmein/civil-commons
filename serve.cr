@@ -15,6 +15,12 @@ set api-sessions-get [ load ./api/sessions-get.cr, point ]
 set api-sessions-update [ load ./api/sessions-update.cr, point ]
 set api-sessions-log [ load ./api/sessions-log.cr, point ]
 
+# Document API route handlers
+set api-documents-list [ load ./api/documents-list.cr, point ]
+set api-documents-create [ load ./api/documents-create.cr, point ]
+set api-documents-get [ load ./api/documents-get.cr, point ]
+set api-documents-update [ load ./api/documents-update.cr, point ]
+
 # Helper to read raw file (without toString for binary files)
 set i-raw [ function x [
  get fs readFile, call [ get x ]
@@ -142,66 +148,107 @@ set handler [
     get request url, at startsWith, call /api/sessions/, true [
      set session-id [ get extract-session-id, call [ get request url ] ]
      
-     # Check if this is a log endpoint: /api/sessions/:id/log or /api/sessions/:id/log/:index
+     # Parse URL parts: /api/sessions/:id/...
      set url-parts [ get request url, at split, call / ]
-     set is-log-endpoint [ get url-parts, at 4, is log ]
+     set sub-resource [ get url-parts, at 4 ]
      
-     get is-log-endpoint, true [
+     # Check for documents endpoint: /api/sessions/:id/documents
+     get sub-resource, is documents, true [
       set handled value true
-      get request method, is GET, true [
-       # GET /api/sessions/:id/log
-       set result [ get api-sessions-log get-handler, call [ get session-id ] ]
-       get respond, call 200 [
-        global JSON stringify, call [ get result ]
-       ] application/json
-      ], false [
-       get request method, is POST, true [
-        # POST /api/sessions/:id/log
-        set body-text [ get read-body, call [ get request ] ]
-        set parsed [ get parse-json-body, call [ get body-text ] ]
-        get parsed error, true [
-         get respond, call 400 [
-          global JSON stringify, call [ object [ error [ get parsed error ] ] ]
-         ] application/json
-        ], false [
-         set result [ get api-sessions-log post-handler, call [ get session-id ] [ get parsed data ] ]
-         get respond, call 201 [
-          global JSON stringify, call [ get result ]
-         ] application/json
-        ]
+      set doc-id [ get url-parts, at 5 ]
+      
+      get doc-id, true [
+       # Single document operations: /api/sessions/:id/documents/:docId
+       get request method, is GET, true [
+        get api-documents-get, call [ get request ] [ get respond ] [ get session-id ] [ get doc-id ]
        ], false [
-        get request method, is DELETE, true [
-         # DELETE /api/sessions/:id/log/:index
-         set event-index [ get url-parts, at 5 ]
-         set result [ get api-sessions-log delete-handler, call [ get session-id ] [ get event-index ] ]
-         get result error, true [
-          get respond, call [ get result status ] [
-           global JSON stringify, call [ object [ error [ get result error ] ] ]
+        get request method, is PATCH, true [
+         set body-text [ get read-body, call [ get request ] ]
+         set parsed [ get parse-json-body, call [ get body-text ] ]
+         get parsed error, true [
+          get respond, call 400 [
+           global JSON stringify, call [ object [ error [ get parsed error ] ] ]
           ] application/json
          ], false [
-          get respond, call 200 [
+          get api-documents-update, call [ get request ] [ get respond ] [ get session-id ] [ get doc-id ] [ get parsed data ]
+         ]
+        ]
+       ]
+      ], false [
+       # Collection operations: /api/sessions/:id/documents
+       get request method, is GET, true [
+        get api-documents-list, call [ get request ] [ get respond ] [ get session-id ]
+       ], false [
+        get request method, is POST, true [
+         get api-documents-create, call [ get request ] [ get respond ] [ get session-id ]
+        ]
+       ]
+      ]
+     ]
+     
+     # Check if this is a log endpoint: /api/sessions/:id/log or /api/sessions/:id/log/:index
+     get handled value, false [
+      get sub-resource, is log, true [
+       set handled value true
+       get request method, is GET, true [
+        # GET /api/sessions/:id/log
+        set result [ get api-sessions-log get-handler, call [ get session-id ] ]
+        get respond, call 200 [
+         global JSON stringify, call [ get result ]
+        ] application/json
+       ], false [
+        get request method, is POST, true [
+         # POST /api/sessions/:id/log
+         set body-text [ get read-body, call [ get request ] ]
+         set parsed [ get parse-json-body, call [ get body-text ] ]
+         get parsed error, true [
+          get respond, call 400 [
+           global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+          ] application/json
+         ], false [
+          set result [ get api-sessions-log post-handler, call [ get session-id ] [ get parsed data ] ]
+          get respond, call 201 [
            global JSON stringify, call [ get result ]
           ] application/json
+         ]
+        ], false [
+         get request method, is DELETE, true [
+          # DELETE /api/sessions/:id/log/:index
+          set event-index [ get url-parts, at 5 ]
+          set result [ get api-sessions-log delete-handler, call [ get session-id ] [ get event-index ] ]
+          get result error, true [
+           get respond, call [ get result status ] [
+            global JSON stringify, call [ object [ error [ get result error ] ] ]
+           ] application/json
+          ], false [
+           get respond, call 200 [
+            global JSON stringify, call [ get result ]
+           ] application/json
+          ]
          ]
         ]
        ]
       ]
-     ], false [
-      # Regular session endpoint
-      get request method, is GET, true [
-       set handled value true
-       get api-sessions-get, call [ get request ] [ get respond ] [ get session-id ]
-      ], false [
-       get request method, is PATCH, true [
+     ]
+     
+     # Regular session endpoint (no sub-resource)
+     get handled value, false [
+      get sub-resource, false [
+       get request method, is GET, true [
         set handled value true
-        set body-text [ get read-body, call [ get request ] ]
-        set parsed [ get parse-json-body, call [ get body-text ] ]
-        get parsed error, true [
-         get respond, call 400 [
-          global JSON stringify, call [ object [ error [ get parsed error ] ] ]
-         ] application/json
-        ], false [
-         get api-sessions-update, call [ get request ] [ get respond ] [ get session-id ] [ get parsed data ]
+        get api-sessions-get, call [ get request ] [ get respond ] [ get session-id ]
+       ], false [
+        get request method, is PATCH, true [
+         set handled value true
+         set body-text [ get read-body, call [ get request ] ]
+         set parsed [ get parse-json-body, call [ get body-text ] ]
+         get parsed error, true [
+          get respond, call 400 [
+           global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+          ] application/json
+         ], false [
+          get api-sessions-update, call [ get request ] [ get respond ] [ get session-id ] [ get parsed data ]
+         ]
         ]
        ]
       ]
