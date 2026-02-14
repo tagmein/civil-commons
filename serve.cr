@@ -20,6 +20,7 @@ set api-documents-list [ load ./api/documents-list.cr, point ]
 set api-documents-create [ load ./api/documents-create.cr, point ]
 set api-documents-get [ load ./api/documents-get.cr, point ]
 set api-documents-update [ load ./api/documents-update.cr, point ]
+set api-gemini-generate [ load ./api/gemini-generate.cr, point ]
 
 # Helper to read raw file (without toString for binary files)
 set i-raw [ function x [
@@ -321,6 +322,13 @@ set handler [
        ]
       ]
      ]
+    ]
+   ]
+   
+   get request url, is /api/gemini-generate, true [
+    get request method, is POST, true [
+     set handled value true
+     get api-gemini-generate, call [ get request ] [ get respond ]
     ]
    ]
    

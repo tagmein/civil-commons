@@ -10,6 +10,12 @@ tell '.preferences-content' [
  ]
 ]
 
+tell '.preferences-tab-content' [
+ object [
+  padding-top 16px
+ ]
+]
+
 tell '.preferences-section' [
  object [
   margin-bottom 20px
@@ -39,6 +45,70 @@ tell '.preferences-checkbox' [
  object [
   margin-right 10px
   cursor pointer
+ ]
+]
+
+tell '.preferences-input-label' [
+ object [
+  display block
+  color '#e0e0d0'
+  font-size 14px
+  margin '0 0 6px 0'
+ ]
+]
+
+tell '.preferences-input' [
+ object [
+  background-color '#1e1e22'
+  border '1px solid #444448'
+  border-radius 4px
+  color '#e0e0d0'
+  font-size 14px
+  padding '8px 10px'
+  width '100%'
+  box-sizing border-box
+ ]
+]
+
+tell '.preferences-input:focus' [
+ object [
+  border-color '#4a9eff'
+  outline none
+ ]
+]
+
+tell '.preferences-input-wrap' [
+ object [
+  display flex
+  align-items center
+  gap 8px
+ ]
+]
+
+tell '.preferences-input-wrap .preferences-input' [
+ object [
+  flex 1
+  min-width 0
+ ]
+]
+
+tell '.preferences-visibility-toggle' [
+ object [
+  background none
+  border none
+  color '#808080'
+  cursor pointer
+  padding 8px
+  display flex
+  align-items center
+  justify-content center
+  border-radius 4px
+ ]
+]
+
+tell '.preferences-visibility-toggle:hover' [
+ object [
+  color '#e0e0d0'
  ]
 ]
 
@@ -89,13 +159,20 @@ get conductor register, call commons:preferences [
   ]
   set padding-container style padding '20px'
 
-  # Tab bar: Windows (and optionally General later)
+  # Tab bar: Windows, General
   set tabs [ get components tab-bar, call ]
 
   set windows-content [
    global document createElement, call div
   ]
+  get windows-content classList add, call preferences-tab-content
   set windows-content style display 'block'
+
+  set general-content [
+   global document createElement, call div
+  ]
+  get general-content classList add, call preferences-tab-content
+  set general-content style display 'none'
 
   # Log Preferences section under Windows
   set log-prefs-section [
@@ -140,16 +217,113 @@ get conductor register, call commons:preferences [
   get log-prefs-section appendChild, call [ get label ]
   get windows-content appendChild, call [ get log-prefs-section ]
 
+  # General tab: Gemini API Key
+  set api-section [
+   global document createElement, call div
+  ]
+  get api-section classList add, call preferences-section
+
+  set api-title [
+   global document createElement, call h2
+  ]
+  get api-title classList add, call preferences-section-title
+  set api-title textContent 'API'
+  get api-section appendChild, call [ get api-title ]
+
+  set api-key-label [
+   global document createElement, call label
+  ]
+  get api-key-label classList add, call preferences-input-label
+  set api-key-label-text [
+   global document createElement, call span
+  ]
+  set api-key-label-text textContent 'Gemini API Key'
+  get api-key-label appendChild, call [ get api-key-label-text ]
+
+  set api-key-input [
+   global document createElement, call input
+  ]
+  set api-key-input type 'password'
+  get api-key-input classList add, call preferences-input
+  set api-key-initial [ get session-service get-preference, call 'geminiApiKey' ]
+  get api-key-initial, true [
+   set api-key-input value [ get api-key-initial ]
+  ]
+  set api-key-input placeholder 'Enter your API key from aistudio.google.com/apikey'
+
+  get api-key-input addEventListener, call change [
+   function [
+    set val [ get api-key-input value ]
+    get session-service set-preference, call 'geminiApiKey' [ get val ]
+   ]
+  ]
+  get api-key-input addEventListener, call blur [
+   function [
+    set val [ get api-key-input value ]
+    get session-service set-preference, call 'geminiApiKey' [ get val ]
+   ]
+  ]
+
+  set api-key-wrap [
+   global document createElement, call div
+  ]
+  get api-key-wrap classList add, call preferences-input-wrap
+  get api-key-wrap appendChild, call [ get api-key-input ]
+
+  set visibility-toggle [
+   global document createElement, call button
+  ]
+  set visibility-toggle type 'button'
+  get visibility-toggle classList add, call preferences-visibility-toggle
+  set visibility-toggle title 'Show API key'
+  set eye-icon [ get lib svg-icon, call /app/icons/eye.svg ]
+  set eye-off-icon [ get lib svg-icon, call /app/icons/eye-off.svg ]
+  set eye-off-icon style display 'none'
+  get visibility-toggle appendChild, call [ get eye-icon ]
+  get visibility-toggle appendChild, call [ get eye-off-icon ]
+
+  get visibility-toggle addEventListener, call click [
+   function [
+    get api-key-input type, is 'password', true [
+     set api-key-input type 'text'
+     set eye-icon style display 'none'
+     set eye-off-icon style display 'block'
+     set visibility-toggle title 'Hide API key'
+    ], false [
+     set api-key-input type 'password'
+     set eye-icon style display 'block'
+     set eye-off-icon style display 'none'
+     set visibility-toggle title 'Show API key'
+    ]
+   ]
+  ]
+
+  get api-key-wrap appendChild, call [ get visibility-toggle ]
+  get api-section appendChild, call [ get api-key-label ]
+  get api-section appendChild, call [ get api-key-wrap ]
+  get general-content appendChild, call [ get api-section ]
+
   set windows-tab [
    get tabs add, call 'Windows' [
     function tab event [
      set windows-content style display 'block'
+     set general-content style display 'none'
+    ]
+   ]
+  ]
+
+  set general-tab [
+   get tabs add, call 'General' [
+    function tab event [
+     set windows-content style display 'none'
+     set general-content style display 'block'
     ]
    ]
   ]
 
   get padding-container appendChild, call [ get tabs element ]
   get padding-container appendChild, call [ get windows-content ]
+  get padding-container appendChild, call [ get general-content ]
   get content appendChild, call [ get padding-container ]
 
   get tabs set-active, call [ get windows-tab ]

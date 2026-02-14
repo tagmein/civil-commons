@@ -58,6 +58,7 @@ tell '.document-status-id' [
 
 # Track open document windows by ID
 set open-documents [ object ]
+set main open-documents-ref [ object [ current [ get open-documents ] ] ]
 
 # Create and open a document window
 set open-document-window [ function doc-id [
@@ -160,7 +161,9 @@ set open-document-window [ function doc-id [
   ]
  ]
 
- # Store reference and set up cleanup
+ # Store reference and set up cleanup (textarea and doc-id for AI insert)
+ set doc-window textarea [ get textarea ]
+ set doc-window doc-id [ get doc-id ]
  set open-documents [ get doc-id ] [ get doc-window ]
 
  # Override close to clean up and optionally mark log entry skipped on replay
@@ -203,7 +206,7 @@ set open-document-window [ function doc-id [
  get doc-service set-current-document-id, call [ get doc-id ]
 ] ]
 
-# Register document:open action (arg can be doc-id string or object [ id, name ])
+# Register document:open action (arg can be doc-id string or object with id and name)
 get conductor register, call document:open [
  function arg [
   set doc-id [ get arg id, default [ get arg ] ]
@@ -220,8 +223,7 @@ get conductor register, call '!document:new' [
   set doc-service [ get main document-service ]
   set doc [ get doc-service create-document, call ]
   get doc, true [
-   # Dispatch document:open so it gets logged for replay (with name for log UI)
    get conductor dispatch, call document:open [ object [ id [ get doc id ], name [ get doc name, default 'Untitled' ] ] ]
   ]
  ]
-]
+ ]
