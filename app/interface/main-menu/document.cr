@@ -7,7 +7,9 @@ get document add, call 'New' [
 ]
 
 get document add, call 'Rename' [
- get conductor dispatch, will document:rename
+ function item event [
+  get conductor dispatch, call document:rename [ get main document-service get-current-document-id, call ]
+ ]
 ]
 
 get document add, call 'Recent' [

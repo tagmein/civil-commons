@@ -1,7 +1,37 @@
 get conductor register, call commons:about [
  function [
+  set session-service [ get main session-service ]
   set about-window [
    get components window, call 'About Civil Commons' 400 500
+  ]
+  set log-entry [ get conductor getLastLoggedEntry, call ]
+  get log-entry, true [
+   get log-entry id, true [
+    set about-window logEntryId [ get log-entry id ]
+   ]
+  ]
+  set replay-ev [ get conductor getReplayEvent, call ]
+  get replay-ev, true [
+   get replay-ev id, true [
+    set about-window logEntryId [ get replay-ev id ]
+   ]
+  ]
+  set original-close [ get about-window close ]
+  set about-window close [ function [
+   get about-window logEntryId, true [
+    get session-service get-preference, call 'skipClosedWindowsOnReplay', true [
+     get session-service mark-event-skipped-on-replay, call [ get about-window logEntryId ]
+    ]
+   ], false [
+    get session-service get-preference, call 'skipClosedWindowsOnReplay', true [
+     get session-service mark-last-event-with-action-skipped-on-replay, call 'commons:about'
+    ]
+   ]
+   get original-close, call
+  ] ]
+  get about-window logEntryId, true [
+   set about-window onMinimize [ function win [ get session-service set-event-minimized, call [ get win logEntryId ] true ] ]
+   set about-window onRestore [ function win [ get session-service set-event-minimized, call [ get win logEntryId ] false ] ]
   ]
   set content [
    global document createElement, call div
@@ -123,5 +153,11 @@ get conductor register, call commons:about [
   get main stage place-window, call [
    get about-window
   ] [ get main status ]
+  set replay-ev [ get conductor getReplayEvent, call ]
+  get replay-ev, true [
+   get replay-ev minimized, true [
+    get about-window minimize-window, tell
+   ]
+  ]
  ]
 ]

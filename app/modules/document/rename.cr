@@ -96,16 +96,28 @@ tell '.rename-doc-form button.primary:hover' [
  ]
 ]
 
+tell '.rename-doc-form-id' [
+ object [
+  color '#808080'
+  font-size 12px
+  margin-bottom 12px
+ ]
+]
+
 get conductor register, call document:rename [
- function [
+ function arg [
   set doc-service [ get main document-service ]
-  set current-id [ get doc-service get-current-document-id, call ]
-  
+  set session-service [ get main session-service ]
+  set current-id [ get arg, default [ get doc-service get-current-document-id, call ] ]
+
   get current-id, false [
    log No current document to rename
    value undefined
   ]
-  
+
+  # Ensure this document is current (e.g. when reopened via replay)
+  get doc-service set-current-document-id, call [ get current-id ]
+
   # Fetch current document info - default name to Untitled Document if not found
   # Using reference pattern to avoid Crown scoping issues
   set name-ref [ object [ name 'Untitled Document' ] ]
@@ -118,23 +130,58 @@ get conductor register, call document:rename [
    # Failed to fetch, use default
   ]
   set doc-name [ get name-ref name ]
-  
+
   set rename-window [
    get components window, call 'Rename Document' 220 350
   ]
-  
+
+  # Attach log entry id so we can mark skipped on replay when window is closed
+  set log-entry [ get conductor getLastLoggedEntry, call ]
+  get log-entry, true [
+   get log-entry id, true [
+    set rename-window logEntryId [ get log-entry id ]
+   ]
+  ]
+  set replay-ev [ get conductor getReplayEvent, call ]
+  get replay-ev, true [
+   get replay-ev id, true [
+    set rename-window logEntryId [ get replay-ev id ]
+   ]
+  ]
+
+  # Override close to optionally mark log entry skipped on replay
+  set original-close [ get rename-window close ]
+  set rename-window close [ function [
+   get rename-window logEntryId, true [
+    get session-service get-preference, call 'skipClosedWindowsOnReplay', true [
+     get session-service mark-event-skipped-on-replay, call [ get rename-window logEntryId ]
+    ]
+   ]
+   get original-close, call
+  ] ]
+  get rename-window logEntryId, true [
+   set rename-window onMinimize [ function win [ get session-service set-event-minimized, call [ get win logEntryId ] true ] ]
+   set rename-window onRestore [ function win [ get session-service set-event-minimized, call [ get win logEntryId ] false ] ]
+  ]
+
   # Create form
   set form [
    global document createElement, call div
   ]
   get form classList add, call rename-doc-form
-  
+
+  # Document ID (shown at top)
+  set doc-id-el [ global document createElement, call div ]
+  get doc-id-el classList add, call rename-doc-form-id
+  set doc-id-el textContent [ template 'Document ID: %0' [ get current-id ] ]
+  get form appendChild, call [ get doc-id-el ]
+
   set label [
    global document createElement, call label
   ]
   set label textContent 'Document name:'
   get form appendChild, call [ get label ]
-  
+
   set input [
    global document createElement, call input
   ]
@@ -142,19 +189,19 @@ get conductor register, call document:rename [
   set input value [ get doc-name ]
   set input placeholder 'Enter document name'
   get form appendChild, call [ get input ]
-  
+
   # Error message element
   set error-msg [
    global document createElement, call div
   ]
   get error-msg classList add, call rename-doc-form-error
   get form appendChild, call [ get error-msg ]
-  
+
   set buttons [
    global document createElement, call div
   ]
   get buttons classList add, call rename-doc-form-buttons
-  
+
   set cancel-btn [
    global document createElement, call button
   ]
@@ -165,7 +212,7 @@ get conductor register, call document:rename [
    ]
   ]
   get buttons appendChild, call [ get cancel-btn ]
-  
+
   set save-btn [
    global document createElement, call button
   ]
@@ -177,11 +224,11 @@ get conductor register, call document:rename [
     get new-name length, > 0, true [
      # Hide any previous error
      get error-msg classList remove, call visible
-     
+
      # Disable button while saving
      set save-btn disabled true
      set save-btn textContent 'Saving...'
-     
+
      # Rename via service with error handling
      set rename-result [ object [ success false, error null ] ]
      try [
@@ -194,14 +241,14 @@ get conductor register, call document:rename [
      ] [
       set rename-result error 'Network error: Could not reach server'
      ]
-     
+
      get rename-result success, true [
       get rename-window close, call
      ], false [
       # Show error message
       set error-msg textContent [ get rename-result error ]
       get error-msg classList add, call visible
-      
+
       # Re-enable button
       set save-btn disabled false
       set save-btn textContent 'Save'
@@ -210,9 +257,9 @@ get conductor register, call document:rename [
    ]
   ]
   get buttons appendChild, call [ get save-btn ]
-  
+
   get form appendChild, call [ get buttons ]
-  
+
   # Handle Enter key
   get input addEventListener, call keydown [
    function event [
@@ -221,12 +268,18 @@ get conductor register, call document:rename [
     ]
    ]
   ]
-  
+
   get rename-window fill, call [ get form ]
   get main stage place-window, call [
    get rename-window
   ] [ get main status ]
-  
+  set replay-ev [ get conductor getReplayEvent, call ]
+  get replay-ev, true [
+   get replay-ev minimized, true [
+    get rename-window minimize-window, tell
+   ]
+  ]
+
   # Focus input after a small delay to ensure DOM is ready
   global setTimeout, call [
    function [

@@ -198,32 +198,100 @@ set handler [
         ] application/json
        ], false [
         get request method, is POST, true [
-         # POST /api/sessions/:id/log
-         set body-text [ get read-body, call [ get request ] ]
-         set parsed [ get parse-json-body, call [ get body-text ] ]
-         get parsed error, true [
-          get respond, call 400 [
-           global JSON stringify, call [ object [ error [ get parsed error ] ] ]
-          ] application/json
-         ], false [
-          set result [ get api-sessions-log post-handler, call [ get session-id ] [ get parsed data ] ]
-          get respond, call 201 [
-           global JSON stringify, call [ get result ]
-          ] application/json
-         ]
-        ], false [
-         get request method, is DELETE, true [
-          # DELETE /api/sessions/:id/log/:index
-          set event-index [ get url-parts, at 5 ]
-          set result [ get api-sessions-log delete-handler, call [ get session-id ] [ get event-index ] ]
-          get result error, true [
-           get respond, call [ get result status ] [
-            global JSON stringify, call [ object [ error [ get result error ] ] ]
+         get url-parts, at 5, is 'skip-last', true [
+          # POST /api/sessions/:id/log/skip-last - mark last event with action as skipped
+          set body-text [ get read-body, call [ get request ] ]
+          set parsed [ get parse-json-body, call [ get body-text ] ]
+          get parsed error, true [
+           get respond, call 400 [
+            global JSON stringify, call [ object [ error [ get parsed error ] ] ]
            ] application/json
           ], false [
-           get respond, call 200 [
+           set result [ get api-sessions-log skip-last-handler, call [ get session-id ] [ get parsed data ] ]
+           get result error, true [
+            get respond, call [ get result status ] [
+             global JSON stringify, call [ object [ error [ get result error ] ] ]
+            ] application/json
+           ], false [
+            get respond, call 200 [
+             global JSON stringify, call [ get result ]
+            ] application/json
+           ]
+          ]
+         ], false [
+          # POST /api/sessions/:id/log
+          set body-text [ get read-body, call [ get request ] ]
+          set parsed [ get parse-json-body, call [ get body-text ] ]
+          get parsed error, true [
+           get respond, call 400 [
+            global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+           ] application/json
+          ], false [
+           set result [ get api-sessions-log post-handler, call [ get session-id ] [ get parsed data ] ]
+           get respond, call 201 [
             global JSON stringify, call [ get result ]
            ] application/json
+          ]
+         ]
+        ], false [
+         get request method, is 'PATCH', true [
+          get url-parts, at 5, is 'by-index', true [
+           # PATCH /api/sessions/:id/log/by-index/:index
+           set index [ get url-parts, at 6 ]
+           set body-text [ get read-body, call [ get request ] ]
+           set parsed [ get parse-json-body, call [ get body-text ] ]
+           get parsed error, true [
+            get respond, call 400 [
+             global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+            ] application/json
+           ], false [
+            set result [ get api-sessions-log patch-by-index-handler, call [ get session-id ] [ get index ] [ get parsed data ] ]
+            get result error, true [
+             get respond, call [ get result status ] [
+              global JSON stringify, call [ object [ error [ get result error ] ] ]
+             ] application/json
+            ], false [
+             get respond, call 200 [
+              global JSON stringify, call [ get result ]
+             ] application/json
+            ]
+           ]
+          ], false [
+           # PATCH /api/sessions/:id/log/:eventId
+           set event-id [ get url-parts, at 5 ]
+           set body-text [ get read-body, call [ get request ] ]
+           set parsed [ get parse-json-body, call [ get body-text ] ]
+           get parsed error, true [
+            get respond, call 400 [
+             global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+            ] application/json
+           ], false [
+            set result [ get api-sessions-log patch-handler, call [ get session-id ] [ get event-id ] [ get parsed data ] ]
+            get result error, true [
+             get respond, call [ get result status ] [
+              global JSON stringify, call [ object [ error [ get result error ] ] ]
+             ] application/json
+            ], false [
+             get respond, call 200 [
+              global JSON stringify, call [ get result ]
+             ] application/json
+            ]
+           ]
+          ]
+         ], false [
+          get request method, is DELETE, true [
+           # DELETE /api/sessions/:id/log/:index
+           set event-index [ get url-parts, at 5 ]
+           set result [ get api-sessions-log delete-handler, call [ get session-id ] [ get event-index ] ]
+           get result error, true [
+            get respond, call [ get result status ] [
+             global JSON stringify, call [ object [ error [ get result error ] ] ]
+            ] application/json
+           ], false [
+            get respond, call 200 [
+             global JSON stringify, call [ get result ]
+            ] application/json
+           ]
           ]
          ]
         ]

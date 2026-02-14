@@ -59,7 +59,7 @@ list tabs menu stage status startup, each [
  ]
 ]
 
-list commons/about log/main session/rename session/archive session/recent document/window document/recent document/rename, each [
+list commons/about commons/preferences log/main session/rename session/archive session/recent document/window document/recent document/rename, each [
  function x [
   load [ template ./modules/%0.cr [ get x ] ], point
  ]

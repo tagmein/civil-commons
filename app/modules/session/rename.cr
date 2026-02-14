@@ -100,12 +100,12 @@ get conductor register, call session:rename [
  function [
   set session-service [ get main session-service ]
   set current-id [ get session-service get-current-session-id, call ]
-  
+
   get current-id, false [
    log No current session to rename
    value undefined
   ]
-  
+
   # Fetch current session info - default name to Untitled if not found
   # Using reference pattern to avoid Crown scoping issues
   set name-ref [ object [ name 'Untitled' ] ]
@@ -118,23 +118,23 @@ get conductor register, call session:rename [
    # Failed to fetch, use default
   ]
   set session-name [ get name-ref name ]
-  
+
   set rename-window [
    get components window, call 'Rename Session' 220 350
   ]
-  
+
   # Create form
   set form [
    global document createElement, call div
   ]
   get form classList add, call rename-form
-  
+
   set label [
    global document createElement, call label
   ]
   set label textContent 'Session name:'
   get form appendChild, call [ get label ]
-  
+
   set input [
    global document createElement, call input
   ]
@@ -142,19 +142,19 @@ get conductor register, call session:rename [
   set input value [ get session-name ]
   set input placeholder 'Enter session name'
   get form appendChild, call [ get input ]
-  
+
   # Error message element
   set error-msg [
    global document createElement, call div
   ]
   get error-msg classList add, call rename-form-error
   get form appendChild, call [ get error-msg ]
-  
+
   set buttons [
    global document createElement, call div
   ]
   get buttons classList add, call rename-form-buttons
-  
+
   set cancel-btn [
    global document createElement, call button
   ]
@@ -166,7 +166,7 @@ get conductor register, call session:rename [
    ]
   ]
   get buttons appendChild, call [ get cancel-btn ]
-  
+
   set save-btn [
    global document createElement, call button
   ]
@@ -178,11 +178,11 @@ get conductor register, call session:rename [
     get new-name length, > 0, true [
      # Hide any previous error
      get error-msg classList remove, call visible
-     
+
      # Disable button while saving
      set save-btn disabled true
      set save-btn textContent 'Saving...'
-     
+
      # Rename via API with error handling
      set rename-result [ object [ success false, error null ] ]
      try [
@@ -195,7 +195,7 @@ get conductor register, call session:rename [
      ] [
       set rename-result error 'Network error: Could not reach server'
      ]
-     
+
      get rename-result success, true [
       # Close window properly (removes from minimap too)
       get rename-window close, call
@@ -203,7 +203,7 @@ get conductor register, call session:rename [
       # Show error message
       set error-msg textContent [ get rename-result error ]
       get error-msg classList add, call visible
-      
+
       # Re-enable button
       set save-btn disabled false
       set save-btn textContent 'Save'
@@ -212,9 +212,9 @@ get conductor register, call session:rename [
    ]
   ]
   get buttons appendChild, call [ get save-btn ]
-  
+
   get form appendChild, call [ get buttons ]
-  
+
   # Handle Enter key
   get input addEventListener, call keydown [
    function event [
@@ -223,12 +223,12 @@ get conductor register, call session:rename [
     ]
    ]
   ]
-  
+
   get rename-window fill, call [ get form ]
   get main stage place-window, call [
    get rename-window
   ] [ get main status ]
-  
+
   # Focus input after a small delay to ensure DOM is ready
   global setTimeout, call [
    function [

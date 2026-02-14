@@ -122,18 +122,48 @@ get conductor register, call session:recent [
  function [
   set session-service [ get main session-service ]
   set open-ids [ get session-service get-open-session-ids, call ]
-  
+
   set recent-window [
    get components window, call 'Recent Sessions' 400 450
   ]
-  
+
+  set log-entry [ get conductor getLastLoggedEntry, call ]
+  get log-entry, true [
+   get log-entry id, true [
+    set recent-window logEntryId [ get log-entry id ]
+   ]
+  ]
+  set replay-ev [ get conductor getReplayEvent, call ]
+  get replay-ev, true [
+   get replay-ev id, true [
+    set recent-window logEntryId [ get replay-ev id ]
+   ]
+  ]
+  set original-close [ get recent-window close ]
+  set recent-window close [ function [
+   get recent-window logEntryId, true [
+    get session-service get-preference, call 'skipClosedWindowsOnReplay', true [
+     get session-service mark-event-skipped-on-replay, call [ get recent-window logEntryId ]
+    ]
+   ], false [
+    get session-service get-preference, call 'skipClosedWindowsOnReplay', true [
+     get session-service mark-last-event-with-action-skipped-on-replay, call 'session:recent'
+    ]
+   ]
+   get original-close, call
+  ] ]
+  get recent-window logEntryId, true [
+   set recent-window onMinimize [ function win [ get session-service set-event-minimized, call [ get win logEntryId ] true ] ]
+   set recent-window onRestore [ function win [ get session-service set-event-minimized, call [ get win logEntryId ] false ] ]
+  ]
+
   # Fetch all sessions
   set all-sessions [ get session-service fetch-all-sessions, call ]
-  
+
   # Separate active and archived
   set active-sessions [ list ]
   set archived-sessions [ list ]
-  
+
   get all-sessions, each [
    function session [
     get session archived, true [
@@ -143,16 +173,16 @@ get conductor register, call session:recent [
     ]
    ]
   ]
-  
+
   # Create container
   set container [
    global document createElement, call div
   ]
   get container classList add, call recent-sessions
-  
+
   # Create tabs using tab-bar component
   set tabs [ get components tab-bar, call ]
-  
+
   set active-tab [
    get tabs add, call [ template 'Active (%0)' [ get active-sessions length ] ] [
     function tab event [
@@ -160,7 +190,7 @@ get conductor register, call session:recent [
     ]
    ]
   ]
-  
+
   set archived-tab [
    get tabs add, call [ template 'Archived (%0)' [ get archived-sessions length ] ] [
     function tab event [
@@ -168,30 +198,30 @@ get conductor register, call session:recent [
     ]
    ]
   ]
-  
+
   # Set active tab as initially selected
   get tabs set-active, call [ get active-tab ]
-  
+
   get container appendChild, call [ get tabs element ]
-  
+
   # Create list container
   set list-container [
    global document createElement, call div
   ]
   get list-container classList add, call recent-list
   get container appendChild, call [ get list-container ]
-  
+
   # Format date helper
   set format-date [ function timestamp [
    global Date, new [ get timestamp ]
    at toLocaleDateString, call
   ] ]
-  
+
   # Render session list
   # show-archived = true means showing archived sessions tab
   set render-list [ function sessions show-archived [
    set list-container innerHTML ''
-   
+
    get sessions length, = 0, true [
     set empty [
      global document createElement, call div
@@ -212,21 +242,21 @@ get conductor register, call session:recent [
        global document createElement, call div
       ]
       get item classList add, call recent-item
-      
+
       set name [
        global document createElement, call span
       ]
       get name classList add, call recent-item-name
       set name textContent [ get session name, default 'Untitled' ]
       get item appendChild, call [ get name ]
-      
+
       set date [
        global document createElement, call span
       ]
       get date classList add, call recent-item-date
       set date textContent [ get format-date, call [ get session createdAt ] ]
       get item appendChild, call [ get date ]
-      
+
       # Open button
       set open-btn [
        global document createElement, call button
@@ -237,7 +267,7 @@ get conductor register, call session:recent [
       get open-btn addEventListener, call click [
        function event [
         get event stopPropagation, call
-        
+
         # If archived, unarchive first
         get show-archived, true [
          global fetch, call [ template '/api/sessions/%0' [ get session id ] ] [
@@ -248,16 +278,16 @@ get conductor register, call session:recent [
           ]
          ]
         ]
-        
+
         # Open the session
         get session-service open-session, call [ get session id ]
-        
+
         # Close window properly (removes from minimap too)
         get recent-window close, call
        ]
       ]
       get item appendChild, call [ get open-btn ]
-      
+
       # Archive button for active sessions
       get show-archived, false [
        set archive-btn [
@@ -269,7 +299,7 @@ get conductor register, call session:recent [
        get archive-btn addEventListener, call click [
         function event [
          get event stopPropagation, call
-         
+
          # Archive the session via API
          global fetch, call [ template '/api/sessions/%0' [ get session id ] ] [
           object [
@@ -278,7 +308,7 @@ get conductor register, call session:recent [
            body [ global JSON stringify, call [ object [ archived true ] ] ]
           ]
          ]
-         
+
          # Remove from active list and add to archived
          set idx [ get active-sessions indexOf, call [ get session ] ]
          get idx, >= 0, true [
@@ -286,18 +316,18 @@ get conductor register, call session:recent [
          ]
          set session archived true
          get archived-sessions push, call [ get session ]
-         
+
          # Update tab counts using tab-bar update-label
          get tabs update-label, call [ get active-tab ] [ template 'Active (%0)' [ get active-sessions length ] ]
          get tabs update-label, call [ get archived-tab ] [ template 'Archived (%0)' [ get archived-sessions length ] ]
-         
+
          # Re-render current list
          get render-list, call [ get active-sessions ] [ value false ]
         ]
        ]
        get item appendChild, call [ get archive-btn ]
       ]
-      
+
       # Restore button for archived sessions
       get show-archived, true [
        set restore-btn [
@@ -309,7 +339,7 @@ get conductor register, call session:recent [
        get restore-btn addEventListener, call click [
         function event [
          get event stopPropagation, call
-         
+
          # Unarchive the session via API
          global fetch, call [ template '/api/sessions/%0' [ get session id ] ] [
           object [
@@ -318,7 +348,7 @@ get conductor register, call session:recent [
            body [ global JSON stringify, call [ object [ archived false ] ] ]
           ]
          ]
-         
+
          # Remove from archived list and add to active
          set idx [ get archived-sessions indexOf, call [ get session ] ]
          get idx, >= 0, true [
@@ -326,32 +356,38 @@ get conductor register, call session:recent [
          ]
          set session archived false
          get active-sessions push, call [ get session ]
-         
+
          # Update tab counts using tab-bar update-label
          get tabs update-label, call [ get active-tab ] [ template 'Active (%0)' [ get active-sessions length ] ]
          get tabs update-label, call [ get archived-tab ] [ template 'Archived (%0)' [ get archived-sessions length ] ]
-         
+
          # Re-render current list
          get render-list, call [ get archived-sessions ] [ value true ]
         ]
        ]
        get item appendChild, call [ get restore-btn ]
       ]
-      
+
       get list-container appendChild, call [ get item ]
      ]
     ]
    ]
   ] ]
-  
+
   # Initial render - show active
   get render-list, call [ get active-sessions ] [ value false ]
-  
+
   # Tab click handlers are now handled by the tab-bar component
-  
+
   get recent-window fill, call [ get container ]
   get main stage place-window, call [
    get recent-window
   ] [ get main status ]
+  set replay-ev [ get conductor getReplayEvent, call ]
+  get replay-ev, true [
+   get replay-ev minimized, true [
+    get recent-window minimize-window, tell
+   ]
+  ]
  ]
 ]

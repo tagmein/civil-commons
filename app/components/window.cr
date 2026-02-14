@@ -233,6 +233,9 @@ function title height width [
    minimized false
    is-resizing false
    is-dragging false
+   logEntryId [ value undefined ]
+   onMinimize [ value undefined ]
+   onRestore [ value undefined ]
   ]
  ]
  get component element classList add, call window
@@ -324,6 +327,7 @@ function title height width [
      ]
     ]
    ]
+   get component onMinimize, true [ get component onMinimize, call [ get component ] ]
   ]
  ]
  set restore-window [
@@ -363,8 +367,11 @@ function title height width [
      ]
     ]
    ]
+   get component onRestore, true [ get component onRestore, call [ get component ] ]
   ]
  ]
+ set component close [ get close-window ]
+ set component minimize-window [ get minimize-window ]
  set component title-buttons [
   get components window-title-buttons, call [
    function [
@@ -382,8 +389,8 @@ function title height width [
    ]
   ] [
    function [
-    # close
-    get close-window, tell
+    # close - call component.close so overrides (e.g. mark skipped on replay) run
+    get component close, tell
    ]
   ]
  ]
@@ -512,6 +519,5 @@ function title height width [
    get component content appendChild, call [ get content-element ]
   ]
  ]
- set component close [ get close-window ]
  get component
 ]

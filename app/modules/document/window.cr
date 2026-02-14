@@ -42,6 +42,17 @@ tell '.document-status' [
   font-size 12px
   padding '4px 12px'
   flex-shrink 0
+  display flex
+  justify-content space-between
+  align-items center
+ ]
+]
+
+tell '.document-status-id' [
+ object [
+  color '#606070'
+  font-size 11px
+  margin-left 8px
  ]
 ]
 
@@ -51,32 +62,47 @@ set open-documents [ object ]
 # Create and open a document window
 set open-document-window [ function doc-id [
  set doc-service [ get main document-service ]
- 
+ set session-service [ get main session-service ]
+
  # Check if already open
  get open-documents [ get doc-id ], true [
   # Focus the existing window (bring to front)
   # For now, just return - could implement window focus later
   value undefined
  ]
- 
+
  # Fetch document data
  set doc [ get doc-service fetch-document, call [ get doc-id ] ]
  get doc, false [
   log Document not found: [ get doc-id ]
   value undefined
  ]
- 
+
  # Create window with document name
  set doc-window [
   get components window, call [ get doc name ]
  ]
- 
+
+ # Attach log entry id so we can mark skipped on replay when window is closed
+ set log-entry [ get conductor getLastLoggedEntry, call ]
+ get log-entry, true [
+  get log-entry id, true [
+   set doc-window logEntryId [ get log-entry id ]
+  ]
+ ]
+ set replay-ev [ get conductor getReplayEvent, call ]
+ get replay-ev, true [
+  get replay-ev id, true [
+   set doc-window logEntryId [ get replay-ev id ]
+  ]
+ ]
+
  # Create content container
  set content [
   global document createElement, call div
  ]
  get content classList add, call document-content
- 
+
  # Create textarea for document content
  set textarea [
   global document createElement, call textarea
@@ -85,76 +111,102 @@ set open-document-window [ function doc-id [
  set textarea value [ get doc content, default '' ]
  set textarea placeholder 'Start typing...'
  get content appendChild, call [ get textarea ]
- 
- # Create status bar
+
+ # Create status bar (left: status text, right: document id)
  set status [
   global document createElement, call div
  ]
  get status classList add, call document-status
- set status textContent 'Ready'
+ set status-left [
+  global document createElement, call span
+ ]
+ set status-left textContent 'Ready'
+ get status appendChild, call [ get status-left ]
+ set status-id [
+  global document createElement, call span
+ ]
+ get status-id classList add, call document-status-id
+ set status-id textContent [ get doc-id ]
+ get status appendChild, call [ get status-id ]
  get content appendChild, call [ get status ]
- 
+
  # Auto-save on blur
  get textarea addEventListener, call blur [
   function [
-   set status textContent 'Saving...'
+   set status-left textContent 'Saving...'
    set result [ get doc-service save-document, call [ get doc-id ] [ get textarea value ] ]
    get result, true [
-    set status textContent 'Saved'
+    set status-left textContent 'Saved'
    ], false [
-    set status textContent 'Error saving'
+    set status-left textContent 'Error saving'
    ]
   ]
  ]
- 
+
  # Track focused document
  get textarea addEventListener, call focus [
   function [
    get doc-service set-current-document-id, call [ get doc-id ]
   ]
  ]
- 
+
  # Listen for rename events to update window title
  get doc-service on, call documentRenamed [
   function data [
    get data id, is [ get doc-id ], true [
     # Update window title
-    set doc-window title-bar textContent [ get data name ]
+    set doc-window title-text textContent [ get data name ]
    ]
   ]
  ]
- 
+
  # Store reference and set up cleanup
  set open-documents [ get doc-id ] [ get doc-window ]
- 
- # Override close to clean up
+
+ # Override close to clean up and optionally mark log entry skipped on replay
  set original-close [ get doc-window close ]
  set doc-window close [ function [
-  # Remove from open documents
+  get session-service get-preference, call 'skipClosedWindowsOnReplay', true [
+   get doc-window logEntryId, true [
+    get session-service mark-event-skipped-on-replay, call [ get doc-window logEntryId ]
+   ], false [
+    get session-service mark-last-event-with-action-skipped-on-replay, call 'document:open'
+   ]
+  ]
   set open-documents [ get doc-id ] null
-  # Call original close
   get original-close, call
  ] ]
- 
+ get doc-window logEntryId, true [
+  set doc-window onMinimize [ function win [ get session-service set-event-minimized, call [ get win logEntryId ] true ] ]
+  set doc-window onRestore [ function win [ get session-service set-event-minimized, call [ get win logEntryId ] false ] ]
+ ]
+
  get doc-window fill, call [ get content ]
  get main stage place-window, call [
   get doc-window
  ] [ get main status ]
- 
+ set replay-ev [ get conductor getReplayEvent, call ]
+ get replay-ev, true [
+  get replay-ev minimized, true [
+   get doc-window minimize-window, tell
+  ]
+ ]
+
  # Focus textarea
  global setTimeout, call [
   function [
    get textarea focus, call
   ]
  ] 50
- 
+
  # Set as current document
  get doc-service set-current-document-id, call [ get doc-id ]
 ] ]
 
-# Register document:open action
+# Register document:open action (arg can be doc-id string or object [ id, name ])
 get conductor register, call document:open [
- function doc-id [
+ function arg [
+  set doc-id [ get arg id, default [ get arg ] ]
   get open-document-window, call [ get doc-id ]
  ]
 ]
@@ -168,8 +220,8 @@ get conductor register, call '!document:new' [
   set doc-service [ get main document-service ]
   set doc [ get doc-service create-document, call ]
   get doc, true [
-   # Dispatch document:open so it gets logged for replay
-   get conductor dispatch, call document:open [ get doc id ]
+   # Dispatch document:open so it gets logged for replay (with name for log UI)
+   get conductor dispatch, call document:open [ object [ id [ get doc id ], name [ get doc name, default 'Untitled' ] ] ]
   ]
  ]
 ]

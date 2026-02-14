@@ -6,6 +6,12 @@ set replay-mode [ object [ active false ] ]
 # Hook for logging events - can be set by session service
 set event-hook [ object [ callback null ] ]
 
+# Last event logged (return value of hook) - so handlers e.g. document:open can attach log entry id to window
+set lastLoggedEntry [ object [ value null ] ]
+
+# Event currently being replayed (so handlers can e.g. start window minimized)
+set replayEventRef [ object [ value null ] ]
+
 set dispatch [
  function action arg [
   # Check if action starts with ! (skip on replay)
@@ -30,10 +36,10 @@ set dispatch [
    ], true [ 
     log CONDUCTOR DISPATCH [ get action ]
     
-    # Forward to event hook if set and not in replay mode
+    # Forward to event hook if set and not in replay mode; store return so handlers can read log entry (e.g. id)
     get replay-mode active, false [
      get event-hook callback, true [
-      get event-hook callback, call [ get action ] [ get arg ]
+      set lastLoggedEntry value [ get event-hook callback, call [ get action ] [ get arg ] ]
      ]
     ]
     
@@ -71,6 +77,20 @@ set end-replay [ function [
  set replay-mode active false
 ] ]
 
+# Get the last logged entry (event object with id) so handlers can e.g. set logEntryId on a window
+set getLastLoggedEntry [ function [
+ get lastLoggedEntry value
+] ]
+
+# Set/get the event currently being replayed (so window-opening handlers can e.g. start minimized)
+set setReplayEvent [ function event [
+ set replayEventRef value [ get event ]
+] ]
+
+set getReplayEvent [ function [
+ get replayEventRef value
+] ]
+
 object [
  dispatch
  register
@@ -78,4 +98,7 @@ object [
  set-event-hook
  start-replay
  end-replay
+ getLastLoggedEntry
+ setReplayEvent
+ getReplayEvent
 ]
