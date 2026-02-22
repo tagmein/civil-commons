@@ -8,6 +8,14 @@ function mail-service contact-service on-send [
  set to-field [ get lib email-input, call 'To' [ get contacts ] ]
  set cc-field [ get lib email-input, call 'Cc' [ get contacts ] ]
  set bcc-field [ get lib email-input, call 'Bcc' [ get contacts ] ]
+ set refresh-contacts [ function [
+  set fresh [ get contact-service fetch-contacts, call ]
+  get from-field setContacts, call [ get fresh ]
+  get to-field setContacts, call [ get fresh ]
+  get cc-field setContacts, call [ get fresh ]
+  get bcc-field setContacts, call [ get fresh ]
+ ] ]
+ get contact-service add-contacts-change-listener, call [ get refresh-contacts ]
  set wrap [ global document createElement, call div ]
  get wrap classList add, call mail-compose
  get wrap appendChild, call [ get from-field element ]

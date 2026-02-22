@@ -75,6 +75,19 @@ tell '.contact-item-delete:hover' [
  ]
 ]
 
+tell '.contact-item-edit' [
+ object [
+  background-color '#4a9eff'
+  color white
+ ]
+]
+
+tell '.contact-item-edit:hover' [
+ object [
+  background-color '#5aafff'
+ ]
+]
+
 tell '.contact-empty' [
  object [
   color '#808080'
@@ -123,6 +136,25 @@ tell '.contact-add-btn:hover' [
  ]
 ]
 
+tell '.contact-cancel-btn' [
+ object [
+  background-color '#555560'
+  border none
+  border-radius 4px
+  color white
+  cursor pointer
+  font-size 14px
+  margin-left 8px
+  padding '8px 16px'
+ ]
+]
+
+tell '.contact-cancel-btn:hover' [
+ object [
+  background-color '#666670'
+ ]
+]
+
 get conductor register, call contacts:open [
  function [
   set contact-service [ get main contact-service ]
@@ -151,6 +183,8 @@ get conductor register, call contacts:open [
   set list-el [ global document createElement, call div ]
   get list-el classList add, call contact-list
 
+  set editing-contact-id [ object [ value null ] ]
+
   set render-list [ function [
    set list-el innerHTML ''
    set contacts [ get contact-service fetch-contacts, call ]
@@ -172,6 +206,20 @@ get conductor register, call contacts:open [
       get email-el classList add, call contact-item-email
       set email-el textContent [ get c email, default '' ]
       get item appendChild, call [ get email-el ]
+      set edit-btn [ global document createElement, call button ]
+      get edit-btn classList add, call contact-item-btn
+      get edit-btn classList add, call contact-item-edit
+      set edit-btn textContent 'Edit'
+      get edit-btn addEventListener, call click [
+       function [
+        set editing-contact-id value [ get c id ]
+        set name-input value [ get c name, default '' ]
+        set email-input value [ get c email, default '' ]
+        set add-btn textContent 'Save'
+        set cancel-btn style display block
+       ]
+      ]
+      get item appendChild, call [ get edit-btn ]
       set delete-btn [ global document createElement, call button ]
       get delete-btn classList add, call contact-item-btn
       get delete-btn classList add, call contact-item-delete
@@ -180,6 +228,7 @@ get conductor register, call contacts:open [
        function [
         get contact-service delete-contact, call [ get c id ]
         get render-list, call
+        get contact-service notify-contacts-changed, call
        ]
       ]
       get item appendChild, call [ get delete-btn ]
@@ -208,15 +257,41 @@ get conductor register, call contacts:open [
    function [
     set name [ get name-input value ]
     set email [ get email-input value ]
-    get name length, > 0, true [
-     get contact-service create-contact, call [ get name ] [ get email ]
+    get editing-contact-id value, true [
+     get contact-service update-contact, call [ get editing-contact-id value ] [ get name ] [ get email ]
+     set editing-contact-id value null
      set name-input value ''
      set email-input value ''
+     set add-btn textContent 'Add'
+     set cancel-btn style display none
      get render-list, call
+     get contact-service notify-contacts-changed, call
+    ], false [
+     get name length, > 0, true [
+      get contact-service create-contact, call [ get name ] [ get email ]
+      set name-input value ''
+      set email-input value ''
+      get render-list, call
+      get contact-service notify-contacts-changed, call
+     ]
     ]
    ]
   ]
   get add-section appendChild, call [ get add-btn ]
+  set cancel-btn [ global document createElement, call button ]
+  get cancel-btn classList add, call contact-cancel-btn
+  set cancel-btn textContent 'Cancel'
+  set cancel-btn style display none
+  get cancel-btn addEventListener, call click [
+   function [
+    set editing-contact-id value null
+    set name-input value ''
+    set email-input value ''
+    set add-btn textContent 'Add'
+    set cancel-btn style display none
+   ]
+  ]
+  get add-section appendChild, call [ get cancel-btn ]
 
   get container appendChild, call [ get list-el ]
   get container appendChild, call [ get add-section ]

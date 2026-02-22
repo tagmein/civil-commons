@@ -1,5 +1,19 @@
 # Contacts Service - Contact management within a session
 
+set contacts-change-listeners [ list ]
+
+set add-contacts-change-listener [ function callback [
+ get contacts-change-listeners push, call [ get callback ]
+] ]
+
+set notify-contacts-changed [ function [
+ get contacts-change-listeners, each [
+  function cb [
+   get cb, call
+  ]
+ ]
+] ]
+
 set get-session-id [ function [
  get main session-service get-current-session-id, call
 ] ]
@@ -92,6 +106,8 @@ set delete-contact [ function contact-id [
 ] ]
 
 object [
+ add-contacts-change-listener
+ notify-contacts-changed
  fetch-contacts
  create-contact
  update-contact

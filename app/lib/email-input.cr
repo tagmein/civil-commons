@@ -1,5 +1,5 @@
 # Email input with contact autocomplete (datalist)
-# Returns object with element, getValue (returns array of trimmed emails)
+# Returns object with element, getValue, setContacts (refresh datalist options)
 
 function label contacts [
  set wrap [ global document createElement, call div ]
@@ -15,14 +15,21 @@ function label contacts [
  get wrap appendChild, call [ get input ]
  set datalist [ global document createElement, call datalist ]
  get datalist setAttribute, call 'id' [ get list-id ]
- get contacts, each [
-  function c [
-   set opt [ global document createElement, call option ]
-   get opt setAttribute, call 'value' [ get c email, default '' ]
-   set opt textContent [ template '%0 <%1>' [ get c name, default '' ] [ get c email, default '' ] ]
-   get datalist appendChild, call [ get opt ]
+ set populate-datalist [ function new-contacts [
+  set datalist innerHTML ''
+  get new-contacts, each [
+   function c [
+    set email [ get c email, default '' ]
+    get email length, > 0, true [
+     set opt [ global document createElement, call option ]
+     get opt setAttribute, call 'value' [ get email ]
+     set opt textContent [ template '%0 <%1>' [ get c name, default '' ] [ get email ] ]
+     get datalist appendChild, call [ get opt ]
+    ]
+   ]
   ]
- ]
+ ] ]
+ get populate-datalist, call [ get contacts ]
  get wrap appendChild, call [ get datalist ]
  set get-value [ function [
   set raw [ get input value, default '' ]
@@ -36,5 +43,8 @@ function label contacts [
   ]
   get result
  ] ]
- object [ element [ get wrap ] input [ get input ] getValue [ get get-value ] ]
+ set set-contacts [ function new-contacts [
+  get populate-datalist, call [ get new-contacts ]
+ ] ]
+ object [ element [ get wrap ] input [ get input ] getValue [ get get-value ] setContacts [ get set-contacts ] ]
 ]
