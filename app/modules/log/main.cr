@@ -195,6 +195,7 @@ get conductor register, call log:open [
  function [
   set session-service [ get main session-service ]
   set doc-service [ get main document-service ]
+  set mail-service [ get main mail-service ]
 
   set log-window [
    get components window, call 'Event Log' 400 500
@@ -282,6 +283,19 @@ get conductor register, call log:open [
        ]
       ]
 
+      # For mail:open with threadId show thread subject
+      get event action, is 'mail:open', true [
+       get event arg threadId, true [
+        set detail-el [ global document createElement, call div ]
+        get detail-el classList add, call log-event-detail
+        set thread-id [ get event arg threadId ]
+        set thread [ get mail-service fetch-thread, call [ get thread-id ] ]
+        set subject [ get thread subject, default [ get thread-id ] ]
+        set detail-el textContent [ template '%0 (id: %1)' [ get subject ] [ get thread-id ] ]
+        get info appendChild, call [ get detail-el ]
+       ]
+      ]
+
       # Skipped on replay badge
       get event skippedOnReplay, true [
        set skipped-el [ global document createElement, call span ]
@@ -346,7 +360,7 @@ get conductor register, call log:open [
       get event-el appendChild, call [ get delete-btn ]
 
       # Minimized tag (for window-opening events only); show below everything; click to remove
-      set window-opening-actions [ list 'document:open' 'session:recent' 'document:recent' 'commons:about' 'commons:preferences' 'document:rename' 'log:open' ]
+      set window-opening-actions [ list 'document:open' 'mail:open' 'contacts:open' 'session:recent' 'document:recent' 'commons:about' 'commons:preferences' 'document:rename' 'log:open' ]
       set is-window-opening [ get window-opening-actions indexOf, call [ get event action ], >= 0 ]
       get event minimized, true [
        get is-window-opening, true [

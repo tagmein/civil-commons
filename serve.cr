@@ -22,6 +22,26 @@ set api-documents-get [ load ./api/documents-get.cr, point ]
 set api-documents-update [ load ./api/documents-update.cr, point ]
 set api-gemini-generate [ load ./api/gemini-generate.cr, point ]
 
+# Google OAuth
+set api-auth-google [ load ./api/auth-google.cr, point ]
+set api-auth-google-callback [ load ./api/auth-google-callback.cr, point ]
+
+# Mail API route handlers
+set api-mail-accounts-list [ load ./api/mail-accounts-list.cr, point ]
+set api-mail-accounts-create [ load ./api/mail-accounts-create.cr, point ]
+set api-mail-sync-settings [ load ./api/mail-sync-settings.cr, point ]
+set api-mail-sync-history [ load ./api/mail-sync-history.cr, point ]
+set api-mail-threads-list [ load ./api/mail-threads-list.cr, point ]
+set api-mail-threads-create [ load ./api/mail-threads-create.cr, point ]
+set api-mail-threads-get [ load ./api/mail-threads-get.cr, point ]
+set api-mail-threads-update [ load ./api/mail-threads-update.cr, point ]
+
+# Contacts API route handlers
+set api-contacts-list [ load ./api/contacts-list.cr, point ]
+set api-contacts-create [ load ./api/contacts-create.cr, point ]
+set api-contacts-update [ load ./api/contacts-update.cr, point ]
+set api-contacts-delete [ load ./api/contacts-delete.cr, point ]
+
 # Helper to read raw file (without toString for binary files)
 set i-raw [ function x [
  get fs readFile, call [ get x ]
@@ -132,7 +152,19 @@ set handler [
   try [
    # API Routes - handle /api/sessions endpoints
    set handled [ object [ value false ] ]
-   
+
+   get handled value, false [
+    get request url, at startsWith, call /api/auth/google, true [
+     get request url, at startsWith, call /api/auth/google/callback, true [
+      set handled value true
+      get api-auth-google-callback, call [ get request ] [ get respond ] [ get response ]
+     ], false [
+      set handled value true
+      get api-auth-google, call [ get request ] [ get respond ]
+     ]
+    ]
+   ]
+
    get request url, is /api/sessions, true [
     get request method, is POST, true [
      set handled value true
@@ -182,6 +214,129 @@ set handler [
        ], false [
         get request method, is POST, true [
          get api-documents-create, call [ get request ] [ get respond ] [ get session-id ]
+        ]
+       ]
+     ]
+    ]
+     
+     # Check for mail endpoints: /api/sessions/:id/mail/accounts, sync-settings, sync-history, threads
+     get handled value, false [
+      get sub-resource, is mail, true [
+       set handled value true
+       set mail-sub [ get url-parts, at 5 ]
+       get mail-sub, is accounts, true [
+        get request method, is GET, true [
+         get api-mail-accounts-list, call [ get request ] [ get respond ] [ get session-id ]
+        ], false [
+         get request method, is POST, true [
+          set body-text [ get read-body, call [ get request ] ]
+          set parsed [ get parse-json-body, call [ get body-text ] ]
+          get parsed error, true [
+           get respond, call 400 [
+            global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+           ] application/json
+          ], false [
+           get api-mail-accounts-create, call [ get request ] [ get respond ] [ get session-id ] [ get parsed data ]
+          ]
+         ]
+        ]
+       ], false [
+        get mail-sub, is sync-settings, true [
+         set mail-body [ object [ ] ]
+         get request method, is PATCH, true [
+          set body-text [ get read-body, call [ get request ] ]
+          set parsed [ get parse-json-body, call [ get body-text ] ]
+          get parsed data, true [ set mail-body [ get parsed data ] ]
+         ]
+         get api-mail-sync-settings, call [ get request ] [ get respond ] [ get session-id ] [ get mail-body ]
+        ]
+       ], false [
+        get mail-sub, is sync-history, true [
+         set mail-body [ object [ ] ]
+         get request method, is POST, true [
+          set body-text [ get read-body, call [ get request ] ]
+          set parsed [ get parse-json-body, call [ get body-text ] ]
+          get parsed data, true [ set mail-body [ get parsed data ] ]
+         ]
+         get api-mail-sync-history, call [ get request ] [ get respond ] [ get session-id ] [ get mail-body ]
+        ]
+       ], false [
+        get mail-sub, is threads, true [
+         set thread-id [ get url-parts, at 6 ]
+         get thread-id, true [
+          get request method, is GET, true [
+           get api-mail-threads-get, call [ get request ] [ get respond ] [ get session-id ] [ get thread-id ]
+          ], false [
+           get request method, is PATCH, true [
+            set body-text [ get read-body, call [ get request ] ]
+            set parsed [ get parse-json-body, call [ get body-text ] ]
+            get parsed error, true [
+             get respond, call 400 [
+              global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+             ] application/json
+            ], false [
+             get api-mail-threads-update, call [ get request ] [ get respond ] [ get session-id ] [ get thread-id ] [ get parsed data ]
+            ]
+           ]
+          ]
+         ], false [
+          get request method, is GET, true [
+           get api-mail-threads-list, call [ get request ] [ get respond ] [ get session-id ]
+          ], false [
+           get request method, is POST, true [
+            set body-text [ get read-body, call [ get request ] ]
+            set parsed [ get parse-json-body, call [ get body-text ] ]
+            get parsed error, true [
+             get respond, call 400 [
+              global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+             ] application/json
+            ], false [
+             get api-mail-threads-create, call [ get request ] [ get respond ] [ get session-id ] [ get parsed data ]
+            ]
+           ]
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+     
+     # Check for contacts endpoints: /api/sessions/:id/contacts, /api/sessions/:id/contacts/:contactId
+     get handled value, false [
+      get sub-resource, is contacts, true [
+       set handled value true
+       set contact-id [ get url-parts, at 5 ]
+       get contact-id, true [
+        get request method, is PATCH, true [
+         set body-text [ get read-body, call [ get request ] ]
+         set parsed [ get parse-json-body, call [ get body-text ] ]
+         get parsed error, true [
+          get respond, call 400 [
+           global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+          ] application/json
+         ], false [
+          get api-contacts-update, call [ get request ] [ get respond ] [ get session-id ] [ get contact-id ] [ get parsed data ]
+         ]
+        ], false [
+         get request method, is DELETE, true [
+          get api-contacts-delete, call [ get request ] [ get respond ] [ get session-id ] [ get contact-id ]
+         ]
+        ]
+       ], false [
+        get request method, is GET, true [
+         get api-contacts-list, call [ get request ] [ get respond ] [ get session-id ]
+        ], false [
+         get request method, is POST, true [
+          set body-text [ get read-body, call [ get request ] ]
+          set parsed [ get parse-json-body, call [ get body-text ] ]
+          get parsed error, true [
+           get respond, call 400 [
+            global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+           ] application/json
+          ], false [
+           get api-contacts-create, call [ get request ] [ get respond ] [ get session-id ] [ get parsed data ]
+          ]
+         ]
         ]
        ]
       ]

@@ -26,7 +26,7 @@ set package [
 set lib [
  get package
  call lib [
-  list bounds drag-handler style-tag svg-icon
+  list bounds drag-handler email-input style-tag svg-icon
  ]
 ]
 
@@ -49,6 +49,14 @@ set main document-service [
  load ./modules/document/service.cr, point
 ]
 
+# Load mail and contacts services
+set main mail-service [
+ load ./modules/mail/service.cr, point
+]
+set main contact-service [
+ load ./modules/contacts/service.cr, point
+]
+
 list tabs menu stage status startup, each [
  function x [
   set main [ get x ] [
@@ -59,7 +67,7 @@ list tabs menu stage status startup, each [
  ]
 ]
 
-list commons/about commons/preferences log/main session/rename session/archive session/recent document/window document/window-api document/recent document/rename insert/generate-content, each [
+list commons/about commons/preferences contacts/window log/main mail/window mail/accounts-window mail/sync-window session/rename session/archive session/recent document/window document/window-api document/recent document/rename insert/generate-content, each [
  function x [
   load [ template ./modules/%0.cr [ get x ] ], point
  ]

@@ -86,6 +86,13 @@ tell '.window.maximized .window-resize-handle' [
  ]
 ]
 
+tell '.window.window-flash' [
+ object [
+  outline '10px solid #ffff8880'
+  transition 'outline 0.3s ease-out'
+ ]
+]
+
 tell '.window-resize-handle svg' [
  object [
   color '#e0e0d0'
@@ -507,6 +514,18 @@ function title height width [
  get component resize-handle addEventListener, tell mousedown [
   get start-resize
  ]
+ set flash-window [
+  function [
+   get component element classList add, call window-flash
+   global setTimeout, call [
+    function [
+     get component element classList remove, call window-flash
+    ]
+   ] 1500
+  ]
+ ]
+ set component flash [ get flash-window ]
+ set component raise-window [ get raise-window ]
  get raise-window, tell
  set component element style width [
   template %0px [ get component width ]
