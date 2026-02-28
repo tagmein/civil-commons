@@ -381,6 +381,14 @@ set open-value-window [ function val-id [
  ]
 
  get val-service set-current-value-id, call [ get val-id ]
+ get main set-last-interacted-element, call [ get val-window element ]
+
+ get val-window element addEventListener, call mousedown [
+  function [
+   get val-service set-current-value-id, call [ get val-id ]
+   get main set-last-interacted-element, call [ get val-window element ]
+  ]
+ ]
 ] ]
 
 get conductor register, call value:open [

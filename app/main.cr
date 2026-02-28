@@ -57,6 +57,18 @@ set main value-service [
 # Track last interacted item for File > Rename
 set main last-interacted [ object [ type null, id null ] ]
 
+# Toggle last-interacted window highlight
+set main last-interacted-el [ object [ current null ] ]
+set main set-last-interacted-element [ function el [
+ get main last-interacted-el current, true [
+  get main last-interacted-el current classList remove, call last-interacted
+ ]
+ set main last-interacted-el current [ get el ]
+ get el, true [
+  get el classList add, call last-interacted
+ ]
+] ]
+
 # Load mail and contacts services
 set main mail-service [
  load ./modules/mail/service.cr, point

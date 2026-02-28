@@ -86,6 +86,12 @@ tell '.window.maximized .window-resize-handle' [
  ]
 ]
 
+tell '.window.last-interacted' [
+ object [
+  outline '1px solid #4a9eff60'
+ ]
+]
+
 tell '.window.window-flash' [
  object [
   outline '10px solid #ffff8880'

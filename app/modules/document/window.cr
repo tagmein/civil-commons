@@ -148,6 +148,7 @@ set open-document-window [ function doc-id [
  get textarea addEventListener, call focus [
   function [
    get doc-service set-current-document-id, call [ get doc-id ]
+   get main set-last-interacted-element, call [ get doc-window element ]
   ]
  ]
 
@@ -204,6 +205,14 @@ set open-document-window [ function doc-id [
 
  # Set as current document
  get doc-service set-current-document-id, call [ get doc-id ]
+ get main set-last-interacted-element, call [ get doc-window element ]
+
+ get doc-window element addEventListener, call mousedown [
+  function [
+   get doc-service set-current-document-id, call [ get doc-id ]
+   get main set-last-interacted-element, call [ get doc-window element ]
+  ]
+ ]
 ] ]
 
 # Register document:open action (arg can be doc-id string or object with id and name)
