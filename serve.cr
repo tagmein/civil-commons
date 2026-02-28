@@ -22,6 +22,12 @@ set api-documents-get [ load ./api/documents-get.cr, point ]
 set api-documents-update [ load ./api/documents-update.cr, point ]
 set api-gemini-generate [ load ./api/gemini-generate.cr, point ]
 
+# Value API route handlers
+set api-values-list [ load ./api/values-list.cr, point ]
+set api-values-create [ load ./api/values-create.cr, point ]
+set api-values-get [ load ./api/values-get.cr, point ]
+set api-values-update [ load ./api/values-update.cr, point ]
+
 # Google OAuth
 set api-auth-google [ load ./api/auth-google.cr, point ]
 set api-auth-google-callback [ load ./api/auth-google-callback.cr, point ]
@@ -219,6 +225,40 @@ set handler [
      ]
     ]
      
+     # Check for values endpoint: /api/sessions/:id/values
+     get handled value, false [
+      get sub-resource, is values, true [
+       set handled value true
+       set val-id [ get url-parts, at 5 ]
+
+       get val-id, true [
+        get request method, is GET, true [
+         get api-values-get, call [ get request ] [ get respond ] [ get session-id ] [ get val-id ]
+        ], false [
+         get request method, is PATCH, true [
+          set body-text [ get read-body, call [ get request ] ]
+          set parsed [ get parse-json-body, call [ get body-text ] ]
+          get parsed error, true [
+           get respond, call 400 [
+            global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+           ] application/json
+          ], false [
+           get api-values-update, call [ get request ] [ get respond ] [ get session-id ] [ get val-id ] [ get parsed data ]
+          ]
+         ]
+        ]
+       ], false [
+        get request method, is GET, true [
+         get api-values-list, call [ get request ] [ get respond ] [ get session-id ]
+        ], false [
+         get request method, is POST, true [
+          get api-values-create, call [ get request ] [ get respond ] [ get session-id ]
+         ]
+        ]
+       ]
+      ]
+     ]
+
      # Check for mail endpoints: /api/sessions/:id/mail/accounts, sync-settings, sync-history, threads
      get handled value, false [
       get sub-resource, is mail, true [

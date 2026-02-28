@@ -32,6 +32,7 @@ set get-current-document-id [ function [
 # Set current document ID
 set set-current-document-id [ function id [
  set current-doc-ref id [ get id ]
+ set main last-interacted [ object [ type document, id [ get id ] ] ]
  get emit, call change [ get id ]
 ] ]
 

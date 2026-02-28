@@ -225,10 +225,11 @@ get conductor register, call log:open [
 
   # Function to render the log
   set render-log [ function [
-   # Clear content
+   # Preserve scroll position across re-render
+   set saved-scroll [ get content scrollTop ]
+
    set content innerHTML ''
 
-   # Get event log
    set log [ get session-service get-event-log, call ]
 
    get log length, = 0, true [
@@ -397,6 +398,8 @@ get conductor register, call log:open [
      ]
     ]
    ]
+
+   set content scrollTop [ get saved-scroll ]
   ] ]
 
   # Initial render

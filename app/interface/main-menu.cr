@@ -2,7 +2,7 @@ set main-menu [
  get components action-bar, call
 ]
 
-list commons contacts document edit file insert layout log mail page presentation session view window, each [
+list commons contacts new recent file edit insert layout log mail page presentation view window, each [
  function item [
   set menu [
    load [ template ./main-menu/%0.cr [ get item ] ], point

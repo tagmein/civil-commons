@@ -92,6 +92,7 @@ set get-current-session-id [ function [
 # Set current session ID
 set set-current-session-id [ function id [
  global sessionStorage setItem, call [ get CURRENT_KEY ] [ get id ]
+ set main last-interacted [ object [ type session, id [ get id ] ] ]
  get emit, call change [ get id ]
 ] ]
 
