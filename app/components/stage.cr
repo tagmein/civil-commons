@@ -71,18 +71,84 @@ function [
      ]
     ]
    ]
+   parse-tag-pair [
+    function tags prefix default-a default-b [
+     set result [ object [ first [ get default-a ], second [ get default-b ] ] ]
+     get tags, true [
+      get tags, each [
+       function tag [
+        get tag, at startsWith, call [ get prefix ], true [
+         set value-str [ get tag, at replace, call [ get prefix ] '' ]
+         set pair [ get value-str, at split, call ',' ]
+         get pair length, >= 2, true [
+          set first-num [ global parseInt, call [ get pair, at 0 ] 10 ]
+          set second-num [ global parseInt, call [ get pair, at 1 ] 10 ]
+          get first-num, is [ get first-num ], true [
+           set result first [ get first-num ]
+          ]
+          get second-num, is [ get second-num ], true [
+           set result second [ get second-num ]
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+     get result
+    ]
+   ]
    place-window [
     function window status [
+     set replay-ev [ get conductor getReplayEvent, call ]
+     get window logEntryId, false [
+      get replay-ev, true [
+       get replay-ev id, true [
+        set window logEntryId [ get replay-ev id ]
+       ]
+      ], false [
+       set log-entry [ get conductor getLastLoggedEntry, call ]
+       get log-entry, true [
+        get log-entry id, true [
+         set window logEntryId [ get log-entry id ]
+        ]
+       ]
+      ]
+     ]
+     set resolved-position [ object [ x [ get component place-next x ], y [ get component place-next y ] ] ]
+     set resolved-size [ object [ width [ get window width ], height [ get window height ] ] ]
+     get replay-ev, true [
+      get replay-ev tags, true [
+       set parsed-position [
+        get component parse-tag-pair, call [ get replay-ev tags ] 'Position:' [ get resolved-position x ] [ get resolved-position y ]
+       ]
+       set parsed-size [
+        get component parse-tag-pair, call [ get replay-ev tags ] 'Size:' [ get resolved-size width ] [ get resolved-size height ]
+       ]
+       set resolved-position x [ get parsed-position first ]
+       set resolved-position y [ get parsed-position second ]
+       set resolved-size width [ get parsed-size first ]
+       set resolved-size height [ get parsed-size second ]
+      ]
+     ]
+     get replay-ev, true [
+      get replay-ev minimized, true [
+       set window element style display none
+      ]
+     ]
      get component place-advance, tell
      get component content appendChild, tell [
       get window element
      ]
      set window position [
       object [
-       x [ get component place-next x ]
-       y [ get component place-next y ]
+       x [ get resolved-position x ]
+       y [ get resolved-position y ]
       ]
      ]
+     set window width [ get resolved-size width ]
+     set window height [ get resolved-size height ]
+     set window element style width [ template %0px [ get window width ] ]
+     set window element style height [ template %0px [ get window height ] ]
      # Position window using virtual stage coordinates
      get component apply-window-transform, call [ get window ]
      get status, true [
@@ -92,6 +158,12 @@ function [
      get component windows push, tell [ get window ]
      get component minimap, true [
       get component minimap add-window, call [ get window ]
+     ]
+     get window sync-log-position-tag, true [
+      get window sync-log-position-tag, tell
+     ]
+     get window sync-log-size-tag, true [
+      get window sync-log-size-tag, tell
      ]
     ]
    ]

@@ -61,6 +61,18 @@ tell '.log-event-minimized-tag' [
  ]
 ]
 
+tell '.log-event-tag' [
+ object [
+  background-color '#3d4d5d'
+  border-radius 4px
+  color '#d8e7f4'
+  font-size 11px
+  padding '2px 8px'
+  display inline-flex
+  align-items center
+ ]
+]
+
 tell '.log-event-minimized-tag-remove' [
  object [
   background none
@@ -268,16 +280,20 @@ get conductor register, call log:open [
       set action-el textContent [ get event action ]
       get info appendChild, call [ get action-el ]
 
-      # For document:open show document name and id (use current name from API when available, e.g. after rename)
+      # For document:open show document name and id (prefer current name from API so renames and list names show correctly)
       get event action, is 'document:open', true [
        get event arg, true [
         set detail-el [ global document createElement, call div ]
         get detail-el classList add, call log-event-detail
         set doc-id [ get event arg id, default [ get event arg ] ]
-        set doc-name [ get event arg name, default [ get doc-id ] ]
         set current-doc [ get doc-service fetch-document, call [ get doc-id ] ]
-        get current-doc, true [
-         get current-doc name, true [ set doc-name [ get current-doc name ] ]
+        set doc-name [
+         get current-doc name, default [
+          get event arg name, default [ get doc-id ]
+         ]
+        ]
+        get doc-name, is [ get doc-id ], true [
+         set doc-name 'Document'
         ]
         set detail-el textContent [ template '%0 (id: %1)' [ get doc-name ] [ get doc-id ] ]
         get info appendChild, call [ get detail-el ]
@@ -363,10 +379,31 @@ get conductor register, call log:open [
       # Minimized tag (for window-opening events only); show below everything; click to remove
       set window-opening-actions [ list 'document:open' 'mail:open' 'contacts:open' 'session:recent' 'document:recent' 'commons:about' 'commons:preferences' 'document:rename' 'log:open' ]
       set is-window-opening [ get window-opening-actions indexOf, call [ get event action ], >= 0 ]
+      set tags-row-ref [ object [ row null ] ]
+      set ensure-tags-row [
+       function [
+        get tags-row-ref row, false [
+         set tags-row-ref row [ global document createElement, call div ]
+         get tags-row-ref row classList add, call log-event-tags
+         get event-el appendChild, call [ get tags-row-ref row ]
+        ]
+        get tags-row-ref row
+       ]
+      ]
+      get event tags, true [
+       get event tags, each [
+        function event-tag [
+         set tag-el [ global document createElement, call span ]
+         get tag-el classList add, call log-event-tag
+         set tag-el textContent [ get event-tag ]
+         set tags-row [ get ensure-tags-row, call ]
+         get tags-row appendChild, call [ get tag-el ]
+        ]
+       ]
+      ]
       get event minimized, true [
        get is-window-opening, true [
-        set tags-row [ global document createElement, call div ]
-        get tags-row classList add, call log-event-tags
+        set tags-row [ get ensure-tags-row, call ]
         set min-tag [ global document createElement, call span ]
         get min-tag classList add, call log-event-minimized-tag
         set min-text [ global document createElement, call span ]
@@ -388,7 +425,6 @@ get conductor register, call log:open [
         ]
         get min-tag appendChild, call [ get min-remove ]
         get tags-row appendChild, call [ get min-tag ]
-        get event-el appendChild, call [ get tags-row ]
        ]
       ]
 

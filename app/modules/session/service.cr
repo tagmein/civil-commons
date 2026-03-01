@@ -392,6 +392,66 @@ set set-event-minimized-by-index [ function index value [
  ]
 ] ]
 
+# Set a log entry's tags array. Used by window position/size tag updates.
+set set-event-tags [ function event-id tags [
+ set session-id [ get get-current-session-id, call ]
+ get session-id, true [
+  get event-id, true [
+   set response [ global fetch, call [ template '/api/sessions/%0/log/%1' [ get session-id ] [ get event-id ] ] [
+    object [
+     method 'PATCH'
+     headers [ object [ Content-Type 'application/json' ] ]
+     body [ global JSON stringify, call [ object [ tags [ get tags ] ] ] ]
+    ]
+   ] ]
+   get emit, call logChanged null
+  ]
+ ]
+] ]
+
+# Set tags by log index (for events without id). Backfill id on server. Awaits the request.
+set set-event-tags-by-index [ function index tags [
+ set session-id [ get get-current-session-id, call ]
+ get session-id, true [
+  set response [ global fetch, call [ template '/api/sessions/%0/log/by-index/%1' [ get session-id ] [ get index ] ] [
+   object [
+    method 'PATCH'
+    headers [ object [ Content-Type 'application/json' ] ]
+    body [ global JSON stringify, call [ object [ tags [ get tags ] ] ] ]
+   ]
+  ] ]
+  get emit, call logChanged null
+ ]
+] ]
+
+# Remove all tags with prefix, then append replacement tag (by event id)
+set replace-event-tag-by-prefix [ function event-id prefix tag-value [
+ set log [ get get-event-log, call ]
+ set target [ object [ event null ] ]
+ get log, each [
+  function ev [
+   get ev id, is [ get event-id ], true [
+    set target event [ get ev ]
+   ]
+  ]
+ ]
+ get target event, true [
+  set tags-ref [ object [ tags [ list ] ] ]
+  get target event tags, true [
+   set tags-ref tags [ get target event tags ]
+  ]
+  set next-tags [
+   get tags-ref tags, filter [
+    function tag [
+     get tag, at startsWith, call [ get prefix ], not
+    ]
+   ]
+  ]
+  get next-tags push, call [ get tag-value ]
+  get set-event-tags, call [ get event-id ] [ get next-tags ]
+ ]
+] ]
+
 # Mark the most recent log entry with the given action as skipped (fallback when logEntryId wasn't set)
 # Uses server-side skip-last endpoint. Awaits the request so close handlers can rely on persistence before closing.
 set mark-last-event-with-action-skipped-on-replay [ function action [
@@ -454,6 +514,7 @@ object [
  set-event-skipped-on-replay-by-index
  set-event-minimized
  set-event-minimized-by-index
+ replace-event-tag-by-prefix
  mark-last-event-with-action-skipped-on-replay
  get-current-session-id
  set-current-session-id

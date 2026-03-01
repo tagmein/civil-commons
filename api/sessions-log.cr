@@ -156,6 +156,9 @@ set patch-handler [ function session-id event-id body [
    get body hasOwnProperty, call 'minimized', true [
     get body minimized, true [ set ev minimized true ], false [ set ev minimized false ]
    ]
+   get body hasOwnProperty, call 'tags', true [
+    set ev tags [ get body tags ]
+   ]
    get oj, call [ get log-path ] [ get log ]
    set result-ref result [ object [ success true, event [ get ev ] ] ]
   ], false [
@@ -190,6 +193,9 @@ set patch-by-index-handler [ function session-id index body [
     ]
     get body hasOwnProperty, call 'minimized', true [
      get body minimized, true [ set ev minimized true ], false [ set ev minimized false ]
+    ]
+    get body hasOwnProperty, call 'tags', true [
+     set ev tags [ get body tags ]
     ]
     get oj, call [ get log-path ] [ get log ]
     set result-ref result [ object [ success true, event [ get ev ] ] ]

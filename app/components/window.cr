@@ -322,6 +322,36 @@ function title height width [
    ]
   ]
  ]
+ set sync-log-position-tag [
+  function [
+   get component logEntryId, true [
+    get component position, true [
+     set session-service [ get main session-service ]
+     get session-service, true [
+      set tag-value [
+       template 'Position:%0,%1' [ get component position x ] [ get component position y ]
+      ]
+      get session-service replace-event-tag-by-prefix, call [ get component logEntryId ] 'Position:' [ get tag-value ]
+     ]
+    ]
+   ]
+  ]
+ ]
+ set sync-log-size-tag [
+  function [
+   get component logEntryId, true [
+    set session-service [ get main session-service ]
+    get session-service, true [
+     set tag-value [
+      template 'Size:%0,%1' [ get component width ] [ get component height ]
+     ]
+     get session-service replace-event-tag-by-prefix, call [ get component logEntryId ] 'Size:' [ get tag-value ]
+    ]
+   ]
+  ]
+ ]
+ set component sync-log-position-tag [ get sync-log-position-tag ]
+ set component sync-log-size-tag [ get sync-log-size-tag ]
  set minimize-window [
   function [
    get component status-bar, true [
@@ -352,6 +382,7 @@ function title height width [
     set component minimized false
     unset component status-item
     unset component status-item-element
+    set component element style display ''
     get component stage, true [
      get component stage content appendChild, tell [
       get component element
@@ -467,6 +498,7 @@ function title height width [
    function state component [
     get state, true [
      set component is-dragging false
+     get sync-log-position-tag, tell
     ]
    ]
   ]
@@ -514,6 +546,7 @@ function title height width [
     get state overlay parentNode, true [
      get state overlay parentNode removeChild, call [ get state overlay ]
     ]
+   get sync-log-size-tag, tell
    ]
   ]
  ]
