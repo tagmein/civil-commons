@@ -102,6 +102,12 @@ set render-tabs [ function [
        # Switch to this session
        try [
         get svc set-current-session-id, call [ get session-id ]
+        set main stage content innerHTML ''
+        global setTimeout, call [
+         function [
+          global location reload, call
+         ]
+        ] 125
        ] [
         # Failed to switch
        ]
