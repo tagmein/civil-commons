@@ -218,6 +218,19 @@ set open-session [ function id [
  get set-current-session-id, call [ get id ]
 ] ]
 
+# Handle #session=xxx in URL hash (from new tab link) - switch to session and reload
+set handle-hash-session [ function [
+ set hash [ global location hash ]
+ get hash, at startsWith, call '#session=', true [
+  set session-id [ get hash, at substring, call 8 ]
+  get session-id length, > 0, true [
+   get open-session, call [ get session-id ]
+   set global location hash ''
+   global location reload, call
+  ]
+ ]
+] ]
+
 # Initialize sessions on app load
 set initialize [ function [
  set open-ids [ get get-open-session-ids, call ]
@@ -505,6 +518,7 @@ set setup-event-logging [ function [
 
 # Export service object
 object [
+ handle-hash-session
  on
  get-preference
  set-preference

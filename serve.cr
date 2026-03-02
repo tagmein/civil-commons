@@ -28,6 +28,13 @@ set api-values-create [ load ./api/values-create.cr, point ]
 set api-values-get [ load ./api/values-get.cr, point ]
 set api-values-update [ load ./api/values-update.cr, point ]
 
+# Dictionary API route handlers
+set api-dictionaries-list [ load ./api/dictionaries-list.cr, point ]
+set api-dictionaries-create [ load ./api/dictionaries-create.cr, point ]
+set api-dictionaries-get [ load ./api/dictionaries-get.cr, point ]
+set api-dictionaries-update [ load ./api/dictionaries-update.cr, point ]
+set api-references-usage [ load ./api/references-usage.cr, point ]
+
 # Google OAuth
 set api-auth-google [ load ./api/auth-google.cr, point ]
 set api-auth-google-callback [ load ./api/auth-google-callback.cr, point ]
@@ -254,6 +261,54 @@ set handler [
          get request method, is POST, true [
           get api-values-create, call [ get request ] [ get respond ] [ get session-id ]
          ]
+        ]
+       ]
+      ]
+     ]
+
+     # Check for dictionaries endpoint: /api/sessions/:id/dictionaries
+     get handled value, false [
+      get sub-resource, is dictionaries, true [
+       set handled value true
+       set dict-id [ get url-parts, at 5 ]
+
+       get dict-id, true [
+        get request method, is GET, true [
+         get api-dictionaries-get, call [ get request ] [ get respond ] [ get session-id ] [ get dict-id ]
+        ], false [
+         get request method, is PATCH, true [
+          set body-text [ get read-body, call [ get request ] ]
+          set parsed [ get parse-json-body, call [ get body-text ] ]
+          get parsed error, true [
+           get respond, call 400 [
+            global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+           ] application/json
+          ], false [
+           get api-dictionaries-update, call [ get request ] [ get respond ] [ get session-id ] [ get dict-id ] [ get parsed data ]
+          ]
+         ]
+        ]
+       ], false [
+        get request method, is GET, true [
+         get api-dictionaries-list, call [ get request ] [ get respond ] [ get session-id ]
+        ], false [
+         get request method, is POST, true [
+          get api-dictionaries-create, call [ get request ] [ get respond ] [ get session-id ]
+         ]
+        ]
+       ]
+      ]
+     ]
+
+     # Check for references usage: /api/sessions/:id/references/:type/:refId/usage
+     get handled value, false [
+      get sub-resource, is references, true [
+       set ref-type [ get url-parts, at 5 ]
+       set ref-id [ get url-parts, at 6 ]
+       get url-parts, at 7, is usage, true [
+        get request method, is GET, true [
+         set handled value true
+         get api-references-usage, call [ get request ] [ get respond ] [ get session-id ] [ get ref-type ] [ get ref-id ]
         ]
        ]
       ]

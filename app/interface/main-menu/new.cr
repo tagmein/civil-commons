@@ -2,6 +2,10 @@
 
 set new-menu [ get components menu, call New ]
 
+get new-menu add, call 'Dictionary' [
+ get conductor dispatch, will '!dictionary:new'
+]
+
 get new-menu add, call 'Document' [
  get conductor dispatch, will '!document:new'
 ]

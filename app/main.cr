@@ -30,6 +30,10 @@ set lib [
  ]
 ]
 
+set lib value-editor [
+ load ./lib/value-editor.cr, point
+]
+
 set components [
  get package
  call components [
@@ -43,6 +47,8 @@ set main [ object ]
 set main session-service [
  load ./modules/session/service.cr, point
 ]
+# Handle #session=xxx in URL hash (from new tab link) - must run before other init
+get main session-service handle-hash-session, call
 
 # Load document service (needed by document modules)
 set main document-service [
@@ -52,6 +58,11 @@ set main document-service [
 # Load value service (needed by value modules)
 set main value-service [
  load ./modules/value/service.cr, point
+]
+
+# Load dictionary service (needed by dictionary modules)
+set main dictionary-service [
+ load ./modules/dictionary/service.cr, point
 ]
 
 # Track last interacted item for File > Rename
@@ -87,7 +98,7 @@ list tabs menu stage status startup, each [
  ]
 ]
 
-list commons/about commons/preferences contacts/window log/main mail/window mail/accounts-window mail/sync-window session/rename session/archive session/recent document/window document/window-api document/recent document/rename value/window value/recent value/rename recent/items insert/generate-content, each [
+list commons/about commons/preferences contacts/window log/main mail/window mail/accounts-window mail/sync-window session/rename session/archive session/recent document/window document/window-api document/recent document/rename value/window value/recent value/rename recent/items find/items dictionary/window dictionary/rename insert/generate-content, each [
  function x [
   load [ template ./modules/%0.cr [ get x ] ], point
  ]

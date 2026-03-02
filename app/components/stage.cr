@@ -42,6 +42,25 @@ function [
     global document createElement, call div
    ]
    windows [ list ]
+   window-registry [ object ]
+   register-window [
+    function type id window [
+     set key [ template '%0:%1' [ get type ] [ get id ] ]
+     set [ get component window-registry ] [ get key ] [ get window ]
+    ]
+   ]
+   unregister-window [
+    function type id [
+     set key [ template '%0:%1' [ get type ] [ get id ] ]
+     set [ get component window-registry ] [ get key ] null
+    ]
+   ]
+   get-registered-window [
+    function type id [
+     set key [ template '%0:%1' [ get type ] [ get id ] ]
+     get component window-registry [ get key ]
+    ]
+   ]
    # Viewport position in virtual stage coordinates
    viewportX 0
    viewportY 0
@@ -114,8 +133,24 @@ function [
        ]
       ]
      ]
-     set resolved-position [ object [ x [ get component place-next x ], y [ get component place-next y ] ] ]
+     set has-existing-position [ object [ value false ] ]
+     get window position, true [
+      get window position x, true [
+       get window position y, true [
+        set has-existing-position value true
+       ]
+      ]
+     ]
+     set resolved-position [ object [ x 0, y 0 ] ]
      set resolved-size [ object [ width [ get window width ], height [ get window height ] ] ]
+     get has-existing-position value, true [
+      set resolved-position x [ get window position x ]
+      set resolved-position y [ get window position y ]
+     ], false [
+      set resolved-position x [ get component place-next x ]
+      set resolved-position y [ get component place-next y ]
+      get component place-advance, tell
+     ]
      get replay-ev, true [
       get replay-ev tags, true [
        set parsed-position [
@@ -135,7 +170,6 @@ function [
        set window element style display none
       ]
      ]
-     get component place-advance, tell
      get component content appendChild, tell [
       get window element
      ]
@@ -155,9 +189,11 @@ function [
       set window status-bar [ get status ]
       set window stage [ get component ]
      ]
-     get component windows push, tell [ get window ]
-     get component minimap, true [
-      get component minimap add-window, call [ get window ]
+     get has-existing-position value, false [
+      get component windows push, tell [ get window ]
+      get component minimap, true [
+       get component minimap add-window, call [ get window ]
+      ]
      ]
      get window sync-log-position-tag, true [
       get window sync-log-position-tag, tell

@@ -65,13 +65,21 @@ set open-document-window [ function doc-id [
  set doc-service [ get main document-service ]
  set session-service [ get main session-service ]
 
- # Check if already open
- get open-documents [ get doc-id ], true [
-  # Focus the existing window (bring to front)
-  # For now, just return - could implement window focus later
+ # Check stage registry if already open - raise, focus, and flash
+ set existing [ get main stage get-registered-window, call document [ get doc-id ] ]
+ get existing, true [
+  get existing raise-window, tell
+  get main stage place-window, call [ get existing ] [ get main status ]
+  get main set-last-interacted-element, call [ get existing element ]
+  get existing element classList add, call window-flash
+  global setTimeout, call [
+   function [
+    get existing element classList remove, call window-flash
+   ]
+  ] 1000
   value undefined
  ]
-
+ get existing, false [
  # Fetch document data
  set doc [ get doc-service fetch-document, call [ get doc-id ] ]
  get doc, false [
@@ -166,6 +174,7 @@ set open-document-window [ function doc-id [
  set doc-window textarea [ get textarea ]
  set doc-window doc-id [ get doc-id ]
  set open-documents [ get doc-id ] [ get doc-window ]
+ get main stage register-window, call document [ get doc-id ] [ get doc-window ]
 
  # Override close to clean up and optionally mark log entry skipped on replay
  set original-close [ get doc-window close ]
@@ -178,6 +187,7 @@ set open-document-window [ function doc-id [
    ]
   ]
   set open-documents [ get doc-id ] null
+  get main stage unregister-window, call document [ get doc-id ]
   get original-close, call
  ] ]
  get doc-window logEntryId, true [
@@ -212,6 +222,7 @@ set open-document-window [ function doc-id [
    get doc-service set-current-document-id, call [ get doc-id ]
    get main set-last-interacted-element, call [ get doc-window element ]
   ]
+ ]
  ]
 ] ]
 

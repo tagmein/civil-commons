@@ -94,7 +94,7 @@ tell '.window.last-interacted' [
 
 tell '.window.window-flash' [
  object [
-  outline '10px solid #ffff8880'
+  outline '4px solid #ffff66'
   transition 'outline 0.3s ease-out'
  ]
 ]

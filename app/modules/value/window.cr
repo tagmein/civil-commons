@@ -13,105 +13,6 @@ tell '.value-content' [
  ]
 ]
 
-tell '.value-type-row' [
- object [
-  display flex
-  align-items center
-  gap 10px
- ]
-]
-
-tell '.value-type-label' [
- object [
-  color '#a0a0a0'
-  font-size 13px
-  min-width 40px
- ]
-]
-
-tell '.value-type-select' [
- object [
-  background-color '#333337'
-  border '1px solid #444448'
-  border-radius 4px
-  color '#e0e0d0'
-  font-size 14px
-  padding '6px 10px'
-  outline none
-  flex 1
- ]
-]
-
-tell '.value-type-select:focus' [
- object [
-  border-color '#4a9eff'
- ]
-]
-
-tell '.value-input' [
- object [
-  background-color '#1e1e22'
-  border '1px solid #444448'
-  border-radius 4px
-  color '#e0e0d0'
-  flex 1
-  font-family 'Consolas, Monaco, monospace'
-  font-size 14px
-  padding '10px 12px'
-  outline none
-  resize none
- ]
-]
-
-tell '.value-input:focus' [
- object [
-  border-color '#4a9eff'
-  background-color '#222226'
- ]
-]
-
-tell '.value-input:disabled' [
- object [
-  background-color '#2a2a2e'
-  color '#606060'
-  cursor not-allowed
- ]
-]
-
-tell '.value-checkbox-row' [
- object [
-  display flex
-  align-items center
-  gap 10px
-  padding '10px 0'
- ]
-]
-
-tell '.value-checkbox-row input' [
- object [
-  width 20px
-  height 20px
-  cursor pointer
- ]
-]
-
-tell '.value-checkbox-row label' [
- object [
-  color '#e0e0d0'
-  font-size 14px
-  cursor pointer
- ]
-]
-
-tell '.value-null-display' [
- object [
-  color '#808080'
-  font-style italic
-  font-size 14px
-  padding '10px 0'
- ]
-]
-
 tell '.value-status' [
  object [
   background-color '#333337'
@@ -136,96 +37,26 @@ tell '.value-status-id' [
 
 set open-values [ object ]
 
-set build-input [ function container val-type val-value on-change [
- set container innerHTML ''
-
- get val-type, is string, true [
-  set input [ global document createElement, call textarea ]
-  get input classList add, call value-input
-  set input value [ get val-value, default '' ]
-  set input placeholder 'Enter string value...'
-  get input addEventListener, call blur [
-   function [
-    get on-change, call [ get val-type ] [ get input value ]
-   ]
-  ]
-  get container appendChild, call [ get input ]
- ]
-
- get val-type, is integer, true [
-  set input [ global document createElement, call input ]
-  get input classList add, call value-input
-  set input type number
-  set input step 1
-  set input value [ get val-value, default 0 ]
-  set input placeholder 'Enter integer...'
-  get input addEventListener, call blur [
-   function [
-    get on-change, call [ get val-type ] [ global parseInt, call [ get input value ] 10 ]
-   ]
-  ]
-  get container appendChild, call [ get input ]
- ]
-
- get val-type, is float, true [
-  set input [ global document createElement, call input ]
-  get input classList add, call value-input
-  set input type number
-  set input step any
-  set input value [ get val-value, default 0 ]
-  set input placeholder 'Enter float...'
-  get input addEventListener, call blur [
-   function [
-    get on-change, call [ get val-type ] [ global parseFloat, call [ get input value ] ]
-   ]
-  ]
-  get container appendChild, call [ get input ]
- ]
-
- get val-type, is boolean, true [
-  set row [ global document createElement, call div ]
-  get row classList add, call value-checkbox-row
-  set checkbox [ global document createElement, call input ]
-  set checkbox type checkbox
-  set checkbox id 'value-bool-input'
-  set checkbox checked [ get val-value, default false ]
-  get row appendChild, call [ get checkbox ]
-  set label [ global document createElement, call label ]
-  set label htmlFor 'value-bool-input'
-  set label textContent [ get val-value, default false ]
-  get row appendChild, call [ get label ]
-  get checkbox addEventListener, call change [
-   function [
-    set label textContent [ get checkbox checked ]
-    get on-change, call [ get val-type ] [ get checkbox checked ]
-   ]
-  ]
-  get container appendChild, call [ get row ]
- ]
-
- get val-type, is null, true [
-  set display [ global document createElement, call div ]
-  get display classList add, call value-null-display
-  set display textContent 'null'
-  get container appendChild, call [ get display ]
- ]
-
- get val-type, is undefined, true [
-  set display [ global document createElement, call div ]
-  get display classList add, call value-null-display
-  set display textContent 'undefined'
-  get container appendChild, call [ get display ]
- ]
-] ]
+set build-input [ get lib value-editor build-input ]
 
 set open-value-window [ function val-id [
  set val-service [ get main value-service ]
  set session-service [ get main session-service ]
 
- get open-values [ get val-id ], true [
+ set existing [ get main stage get-registered-window, call value [ get val-id ] ]
+ get existing, true [
+  get existing raise-window, tell
+  get main stage place-window, call [ get existing ] [ get main status ]
+  get main set-last-interacted-element, call [ get existing element ]
+  get existing element classList add, call window-flash
+  global setTimeout, call [
+   function [
+    get existing element classList remove, call window-flash
+   ]
+  ] 1000
   value undefined
  ]
-
+ get existing, false [
  set val [ get val-service fetch-value, call [ get val-id ] ]
  get val, false [
   log Value not found: [ get val-id ]
@@ -343,6 +174,7 @@ set open-value-window [ function val-id [
  # Track focused value
  set val-window val-id [ get val-id ]
  set open-values [ get val-id ] [ get val-window ]
+ get main stage register-window, call value [ get val-id ] [ get val-window ]
 
  get val-service on, call valueRenamed [
   function data [
@@ -362,6 +194,7 @@ set open-value-window [ function val-id [
    ]
   ]
   set open-values [ get val-id ] null
+  get main stage unregister-window, call value [ get val-id ]
   get original-close, call
  ] ]
  get val-window logEntryId, true [
@@ -388,6 +221,7 @@ set open-value-window [ function val-id [
    get val-service set-current-value-id, call [ get val-id ]
    get main set-last-interacted-element, call [ get val-window element ]
   ]
+ ]
  ]
 ] ]
 

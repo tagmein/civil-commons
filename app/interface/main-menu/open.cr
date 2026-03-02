@@ -22,4 +22,8 @@ get open-menu add, call 'Mail Sync' [
  get conductor dispatch, will mail:sync
 ]
 
+get open-menu add, call 'Find Items' [
+ get conductor dispatch, will find:open
+]
+
 get open-menu
