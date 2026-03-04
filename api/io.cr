@@ -24,9 +24,9 @@ set ij [ function x [
  ]
 ] ]
 
-# Write file as JSON
+# Write file as JSON (pretty-printed for diffable output)
 set oj [ function x y [
- get fs writeFile, call [ get x ] [ global JSON stringify, call [ get y ] ] utf-8
+ get fs writeFile, call [ get x ] [ global JSON stringify, call [ get y ] null 1 ] utf-8
 ] ]
 
 # Ensure directory exists

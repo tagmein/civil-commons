@@ -55,6 +55,11 @@ set main document-service [
  load ./modules/document/service.cr, point
 ]
 
+# Load script service (needed by script modules)
+set main script-service [
+ load ./modules/script/service.cr, point
+]
+
 # Load value service (needed by value modules)
 set main value-service [
  load ./modules/value/service.cr, point
@@ -67,6 +72,9 @@ set main dictionary-service [
 
 # Track last interacted item for File > Rename
 set main last-interacted [ object [ type null, id null ] ]
+
+# Script run IDs: list of { script-id, run-id } for script-data persistence (reused same page load)
+set main script-run-ids [ list ]
 
 # Toggle last-interacted window highlight
 set main last-interacted-el [ object [ current null ] ]
@@ -98,7 +106,7 @@ list tabs menu stage status startup, each [
  ]
 ]
 
-list commons/about commons/preferences contacts/window log/main mail/window mail/accounts-window mail/sync-window session/rename session/archive session/recent document/window document/window-api document/recent document/rename value/window value/recent value/rename recent/items find/items dictionary/window dictionary/rename insert/generate-content, each [
+list commons/about commons/preferences contacts/window log/main mail/window mail/accounts-window mail/sync-window session/rename session/archive session/recent document/window document/window-api document/recent document/rename script/window script/rename value/window value/recent value/rename recent/items find/items dictionary/window dictionary/rename insert/generate-content, each [
  function x [
   load [ template ./modules/%0.cr [ get x ] ], point
  ]

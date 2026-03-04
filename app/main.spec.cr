@@ -142,6 +142,13 @@ get describe, call 'main application' [
       get expect, call [ get to-be-defined ] [ get main session-service ]
      ]
     ]
+    get it, call 'should have script-service property' [
+     function [
+      set main [ object ]
+      set main script-service [ object ]
+      get expect, call [ get to-be-defined ] [ get main script-service ]
+     ]
+    ]
    ]
   ]
   
@@ -218,6 +225,18 @@ get describe, call 'main application' [
      function [
       set modules [ list 'commons/about' 'log/main' 'session/rename' 'session/archive' 'session/recent' ]
       get expect, call [ get to-contain ] [ get modules, at 4 ] 'session/recent'
+     ]
+    ]
+    get it, call 'should load script/window module' [
+     function [
+      set modules [ list 'commons/about' 'log/main' 'session/rename' 'session/archive' 'session/recent' 'script/window' 'script/rename' ]
+      get expect, call [ get to-contain ] [ get modules ] 'script/window'
+     ]
+    ]
+    get it, call 'should load script/rename module' [
+     function [
+      set modules [ list 'commons/about' 'log/main' 'session/rename' 'session/archive' 'session/recent' 'script/window' 'script/rename' ]
+      get expect, call [ get to-contain ] [ get modules ] 'script/rename'
      ]
     ]
    ]

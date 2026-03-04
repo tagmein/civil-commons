@@ -22,6 +22,14 @@ set api-documents-get [ load ./api/documents-get.cr, point ]
 set api-documents-update [ load ./api/documents-update.cr, point ]
 set api-gemini-generate [ load ./api/gemini-generate.cr, point ]
 
+# Script API route handlers
+set api-scripts-list [ load ./api/scripts-list.cr, point ]
+set api-scripts-create [ load ./api/scripts-create.cr, point ]
+set api-scripts-get [ load ./api/scripts-get.cr, point ]
+set api-scripts-update [ load ./api/scripts-update.cr, point ]
+set api-script-data-get [ load ./api/script-data-get.cr, point ]
+set api-script-data-put [ load ./api/script-data-put.cr, point ]
+
 # Value API route handlers
 set api-values-list [ load ./api/values-list.cr, point ]
 set api-values-create [ load ./api/values-create.cr, point ]
@@ -229,6 +237,68 @@ set handler [
          get api-documents-create, call [ get request ] [ get respond ] [ get session-id ]
         ]
        ]
+     ]
+    ]
+
+    # Check for scripts endpoint: /api/sessions/:id/scripts
+    get handled value, false [
+     get sub-resource, is scripts, true [
+      set handled value true
+      set script-id [ get url-parts, at 5 ]
+
+      get script-id, true [
+       get request method, is GET, true [
+        get api-scripts-get, call [ get request ] [ get respond ] [ get session-id ] [ get script-id ]
+       ], false [
+        get request method, is PATCH, true [
+         set body-text [ get read-body, call [ get request ] ]
+         set parsed [ get parse-json-body, call [ get body-text ] ]
+         get parsed error, true [
+          get respond, call 400 [
+           global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+          ] application/json
+         ], false [
+          get api-scripts-update, call [ get request ] [ get respond ] [ get session-id ] [ get script-id ] [ get parsed data ]
+         ]
+        ]
+       ]
+      ], false [
+       get request method, is GET, true [
+        get api-scripts-list, call [ get request ] [ get respond ] [ get session-id ]
+       ], false [
+        get request method, is POST, true [
+         get api-scripts-create, call [ get request ] [ get respond ] [ get session-id ]
+        ]
+       ]
+      ]
+     ]
+    ]
+
+    # Check for script-data endpoint: /api/sessions/:id/script-data/:runId/:dataKey
+    get handled value, false [
+     get sub-resource, is script-data, true [
+      set handled value true
+      set run-id [ get url-parts, at 5 ]
+      set data-key [ get url-parts, at 6 ]
+      get run-id, true [
+       get data-key, true [
+        get request method, is GET, true [
+         get api-script-data-get, call [ get request ] [ get respond ] [ get session-id ] [ get run-id ] [ get data-key ]
+        ], false [
+         get request method, is PUT, true [
+          set body-text [ get read-body, call [ get request ] ]
+          set parsed [ get parse-json-body, call [ get body-text ] ]
+          get parsed error, true [
+           get respond, call 400 [
+            global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+           ] application/json
+          ], false [
+           get api-script-data-put, call [ get request ] [ get respond ] [ get session-id ] [ get run-id ] [ get data-key ] [ get parsed data ]
+          ]
+         ]
+        ]
+       ]
+      ]
      ]
     ]
      

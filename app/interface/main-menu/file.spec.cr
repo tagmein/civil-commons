@@ -26,6 +26,22 @@ get describe, call 'file menu' [
    ]
   ]
   
+  get describe, call 'Rename dispatch by last-interacted type' [
+   function [
+    get it, call 'should dispatch script:rename when last type is script' [
+     function [
+      set last [ object [ type 'script', id 'script-abc' ] ]
+      get last type, is 'script', true [
+       set expected-action 'script:rename'
+       set expected-id [ get last id ]
+       get expect, call [ get to-equal ] [ get expected-action ] 'script:rename'
+       get expect, call [ get to-equal ] [ get expected-id ] 'script-abc'
+      ]
+     ]
+    ]
+   ]
+  ]
+  
   get describe, call 'return value' [
    function [
     get it, call 'should return file menu object' [

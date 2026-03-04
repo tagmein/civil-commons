@@ -57,9 +57,9 @@
 - When calling from lib: `get lib svg-icon, call path` (not `get get lib svg-icon`)
 
 ### Global Access
-- **NEVER** use `get global` - `global` on its own is a get variant
-- Use `global document` NOT `get global document`
-- Use `global fetch` NOT `get global fetch`
+- **NEVER** use `get global` - use just `global` on its own (it is a get variant, not a name to look up)
+- **CORRECT**: `global document`, `global fetch`, `global crypto randomUUID`, `global Math ceil`, `global setTimeout`, `global Date`, `global JSON`, `global Array from`
+- **WRONG**: `get global document`, `get global fetch`, `get global crypto randomUUID`, `get global Math ceil`, `get global setTimeout` (these fail at runtime: "Expecting value to be a function, but got: undefined")
 - **NEVER** use `global console log` - use the built-in `log` command instead
 
 ### Logging

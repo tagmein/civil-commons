@@ -84,4 +84,4 @@ if [ -n "$CHILD_PID" ]; then
 else
     echo "Port $TARGET_PORT is free."
 fi
-nodemon -e cr,js ./crown serve.cr
+nodemon -e cr,js --ignore data ./crown serve.cr

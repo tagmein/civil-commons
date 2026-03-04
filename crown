@@ -862,6 +862,27 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    const contents = await _fs.readFile(filePath, "utf-8")
    return me.run([contents])
   },
+  async runScript(scopeCrown, sourceCrown) {
+   const scope = uncrown(scopeCrown)
+   const rawSource = uncrown(sourceCrown)
+   const cloned = me.clone()
+   if (scope && typeof scope === "object" && !Array.isArray(scope)) {
+    for (const [k, v] of Object.entries(scope)) {
+     cloned.set(k, crown().value(v))
+    }
+   }
+   try {
+    const { complete, value } = parse(typeof rawSource === "string" ? rawSource : String(rawSource))
+    if (!complete) {
+     throw new Error("runScript: unterminated block")
+    }
+    return cloned.walk(value)
+   } catch (e) {
+    cloned.currentError = e
+    console.error("runScript", e.message)
+    return cloned
+   }
+  },
   async runJsonFile(source) {
    return me.walk(crown().at("require").call(crown().value(source)))
   },
@@ -1152,5 +1173,6 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    return me
   },
  }
+ names.set("runScript", me.runScript.bind(me))
  return me
 }

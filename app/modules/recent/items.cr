@@ -1,5 +1,5 @@
 # Unified Recent Items Window
-# Handles recent:all, recent:documents, recent:sessions, recent:values
+# Handles recent:all, recent:documents, recent:sessions, recent:values, recent:scripts
 
 get lib style-tag
 
@@ -81,6 +81,13 @@ tell '.recent-items-badge-value' [
  ]
 ]
 
+tell '.recent-items-badge-script' [
+ object [
+  background-color '#3a4a5a'
+  color '#88aacc'
+ ]
+]
+
 tell '.recent-items-date' [
  object [
   color '#808080'
@@ -152,11 +159,13 @@ set open-recent-window [ function filter-type [
  set session-service [ get main session-service ]
  set doc-service [ get main document-service ]
  set val-service [ get main value-service ]
+ set script-service [ get main script-service ]
 
  set title-ref [ object [ t 'Recent Items' ] ]
  get filter-type, is documents, true [ set title-ref t 'Recent Documents' ]
  get filter-type, is sessions, true [ set title-ref t 'Recent Sessions' ]
  get filter-type, is values, true [ set title-ref t 'Recent Values' ]
+ get filter-type, is scripts, true [ set title-ref t 'Recent Scripts' ]
 
  set recent-window [
   get components window, call [ get title-ref t ] 450 500
@@ -198,10 +207,11 @@ set open-recent-window [ function filter-type [
  # Collect all items with their type tag
  set all-items [ list ]
 
- # Fetch documents (unless filtered to sessions or values only)
+ # Fetch documents (unless filtered to sessions, values, or scripts only)
  get filter-type, is sessions, false [
   get filter-type, is values, false [
-   set docs [ get doc-service fetch-all-documents, call ]
+   get filter-type, is scripts, false [
+    set docs [ get doc-service fetch-all-documents, call ]
    get docs, each [
     function doc [
      get all-items push, call [
@@ -212,16 +222,18 @@ set open-recent-window [ function filter-type [
        archived [ get doc archived ]
        createdAt [ get doc createdAt ]
       ]
+      ]
      ]
-    ]
    ]
+  ]
   ]
  ]
 
- # Fetch sessions (unless filtered to documents or values only)
+ # Fetch sessions (unless filtered to documents, values, or scripts only)
  get filter-type, is documents, false [
   get filter-type, is values, false [
-   set sessions [ get session-service fetch-all-sessions, call ]
+   get filter-type, is scripts, false [
+    set sessions [ get session-service fetch-all-sessions, call ]
    get sessions, each [
     function s [
      get all-items push, call [
@@ -233,15 +245,17 @@ set open-recent-window [ function filter-type [
        createdAt [ get s createdAt ]
       ]
      ]
-    ]
+     ]
    ]
+  ]
   ]
  ]
 
- # Fetch values (unless filtered to documents or sessions only)
+ # Fetch values (unless filtered to documents, sessions, or scripts only)
  get filter-type, is documents, false [
   get filter-type, is sessions, false [
-   set vals [ get val-service fetch-all-values, call ]
+   get filter-type, is scripts, false [
+    set vals [ get val-service fetch-all-values, call ]
    get vals, each [
     function v [
      get all-items push, call [
@@ -256,6 +270,42 @@ set open-recent-window [ function filter-type [
     ]
    ]
   ]
+  ]
+ ]
+
+ # Fetch scripts (when filter is scripts or all)
+ get filter-type, is scripts, true [
+  set script-list [ get script-service fetch-all-scripts, call ]
+  get script-list, each [
+   function s [
+    get all-items push, call [
+     object [
+      id [ get s id ]
+      name [ get s name, default 'Untitled Script' ]
+      kind script
+      archived [ get s archived, default false ]
+      createdAt [ get s createdAt, default 0 ]
+     ]
+    ]
+   ]
+  ]
+ ], false [
+  get filter-type, is all, true [
+   set script-list [ get script-service fetch-all-scripts, call ]
+   get script-list, each [
+    function s [
+     get all-items push, call [
+      object [
+       id [ get s id ]
+       name [ get s name, default 'Untitled Script' ]
+       kind script
+       archived [ get s archived, default false ]
+       createdAt [ get s createdAt, default 0 ]
+      ]
+    ]
+   ]
+  ]
+ ]
  ]
 
  set active-items [ list ]
@@ -364,6 +414,9 @@ set open-recent-window [ function filter-type [
           ]
          ]
         ]
+        get item kind, is script, true [
+         get script-service restore-script, call [ get item id ]
+        ]
        ]
 
        get item kind, is document, true [
@@ -375,11 +428,27 @@ set open-recent-window [ function filter-type [
        get item kind, is value, true [
         get conductor dispatch, call value:open [ object [ id [ get item id ], name [ get item name ] ] ]
        ]
-
-       get recent-window close, call
+       get item kind, is script, true [
+        get conductor dispatch, call script:open [ object [ id [ get item id ], name [ get item name ] ] ]
+       ]
       ]
      ]
      get row appendChild, call [ get open-btn ]
+
+     get item kind, is script, true [
+      set run-script-id [ get item id ]
+      set run-btn [ global document createElement, call button ]
+      get run-btn classList add, call recent-items-btn
+      get run-btn classList add, call recent-items-open
+      set run-btn textContent 'Run'
+      get run-btn addEventListener, call click [
+       function event [
+        get event stopPropagation, call
+        get conductor dispatch, call 'script:run' [ get run-script-id ]
+       ]
+      ]
+      get row appendChild, call [ get run-btn ]
+     ]
 
      get show-archived, false [
       set archive-btn [ global document createElement, call button ]
@@ -398,6 +467,9 @@ set open-recent-window [ function filter-type [
         ]
         get item kind, is value, true [
          get val-service archive-value, call [ get item id ]
+        ]
+        get item kind, is script, true [
+         get script-service archive-script, call [ get item id ]
         ]
 
         set idx [ get active-items indexOf, call [ get item ] ]
@@ -439,6 +511,9 @@ set open-recent-window [ function filter-type [
         get item kind, is value, true [
          get val-service restore-value, call [ get item id ]
         ]
+        get item kind, is script, true [
+         get script-service restore-script, call [ get item id ]
+        ]
 
         set idx [ get archived-items indexOf, call [ get item ] ]
         get idx, >= 0, true [
@@ -477,24 +552,30 @@ set open-recent-window [ function filter-type [
 
 get conductor register, call recent:all [
  function [
-  get open-recent-window, call all
+  get open-recent-window, call [ value 'all' ]
  ]
 ]
 
 get conductor register, call recent:documents [
  function [
-  get open-recent-window, call documents
+  get open-recent-window, call [ value 'documents' ]
  ]
 ]
 
 get conductor register, call recent:sessions [
  function [
-  get open-recent-window, call sessions
+  get open-recent-window, call [ value 'sessions' ]
  ]
 ]
 
 get conductor register, call recent:values [
  function [
-  get open-recent-window, call values
+  get open-recent-window, call [ value 'values' ]
+ ]
+]
+
+get conductor register, call recent:scripts [
+ function [
+  get open-recent-window, call [ value 'scripts' ]
  ]
 ]

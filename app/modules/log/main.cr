@@ -208,6 +208,8 @@ get conductor register, call log:open [
   set session-service [ get main session-service ]
   set doc-service [ get main document-service ]
   set mail-service [ get main mail-service ]
+  set value-service [ get main value-service ]
+  set script-service [ get main script-service ]
 
   set log-window [
    get components window, call 'Event Log' 400 500
@@ -300,6 +302,79 @@ get conductor register, call log:open [
        ]
       ]
 
+      # For value:open show value name and id
+      get event action, is 'value:open', true [
+       get event arg, true [
+        set detail-el [ global document createElement, call div ]
+        get detail-el classList add, call log-event-detail
+        set val-id [ get event arg id, default [ get event arg ] ]
+        set current-val [ get value-service fetch-value, call [ get val-id ] ]
+        set val-name [
+         get current-val name, default [
+          get event arg name, default [ get val-id ]
+         ]
+        ]
+        get val-name, is [ get val-id ], true [
+         set val-name 'Value'
+        ]
+        set detail-el textContent [ template '%0 (id: %1)' [ get val-name ] [ get val-id ] ]
+        get info appendChild, call [ get detail-el ]
+       ]
+      ]
+
+      # For script:open show script name and id
+      get event action, is 'script:open', true [
+       get event arg, true [
+        set detail-el [ global document createElement, call div ]
+        get detail-el classList add, call log-event-detail
+        set script-id [ get event arg id, default [ get event arg ] ]
+        set current-script [ get script-service fetch-script, call [ get script-id ] ]
+        set script-name [
+         get current-script name, default [
+          get event arg name, default [ get script-id ]
+         ]
+        ]
+        get script-name, is [ get script-id ], true [
+         set script-name 'Script'
+        ]
+        set detail-el textContent [ template '%0 (id: %1)' [ get script-name ] [ get script-id ] ]
+        get info appendChild, call [ get detail-el ]
+       ]
+      ]
+
+      # For script:rename show script name and id (arg is script id)
+      get event action, is 'script:rename', true [
+       get event arg, true [
+        set detail-el [ global document createElement, call div ]
+        get detail-el classList add, call log-event-detail
+        set script-id [ get event arg id, default [ get event arg ] ]
+        set current-script [ get script-service fetch-script, call [ get script-id ] ]
+        set script-name [ get current-script name, default [ get script-id ] ]
+        set detail-el textContent [ template '%0 (id: %1)' [ get script-name ] [ get script-id ] ]
+        get info appendChild, call [ get detail-el ]
+       ]
+      ]
+
+      # For script:run show script name and id (arg has id)
+      get event action, is 'script:run', true [
+       get event arg, true [
+        set detail-el [ global document createElement, call div ]
+        get detail-el classList add, call log-event-detail
+        set script-id [ get event arg id, default [ get event arg ] ]
+        set current-script [ get script-service fetch-script, call [ get script-id ] ]
+        set script-name [
+         get current-script name, default [
+          get event arg name, default [ get script-id ]
+         ]
+        ]
+        get script-name, is [ get script-id ], true [
+         set script-name 'Script'
+        ]
+        set detail-el textContent [ template '%0 (id: %1)' [ get script-name ] [ get script-id ] ]
+        get info appendChild, call [ get detail-el ]
+       ]
+      ]
+
       # For mail:open with threadId show thread subject
       get event action, is 'mail:open', true [
        get event arg threadId, true [
@@ -377,7 +452,7 @@ get conductor register, call log:open [
       get event-el appendChild, call [ get delete-btn ]
 
       # Minimized tag (for window-opening events only); show below everything; click to remove
-      set window-opening-actions [ list 'document:open' 'mail:open' 'contacts:open' 'session:recent' 'document:recent' 'commons:about' 'commons:preferences' 'document:rename' 'log:open' ]
+      set window-opening-actions [ list 'document:open' 'mail:open' 'contacts:open' 'session:recent' 'document:recent' 'commons:about' 'commons:preferences' 'document:rename' 'script:open' 'script:rename' 'script:run' 'log:open' ]
       set is-window-opening [ get window-opening-actions indexOf, call [ get event action ], >= 0 ]
       set tags-row-ref [ object [ row null ] ]
       set ensure-tags-row [

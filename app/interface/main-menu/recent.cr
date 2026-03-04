@@ -18,4 +18,8 @@ get recent add, call 'Values' [
  get conductor dispatch, will recent:values
 ]
 
+get recent add, call 'Scripts' [
+ get conductor dispatch, will recent:scripts
+]
+
 get recent

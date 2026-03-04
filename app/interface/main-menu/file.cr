@@ -17,6 +17,9 @@ get file add, call 'Rename' [
   get last type, is dictionary, true [
    get conductor dispatch, call dictionary:rename [ get last id ]
   ]
+  get last type, is script, true [
+   get conductor dispatch, call script:rename [ get last id ]
+  ]
  ]
 ]
 

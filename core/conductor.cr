@@ -23,7 +23,6 @@ set dispatch [
   # In replay mode, skip actions prefixed with !
   get replay-mode active, true [
    get skip-on-replay, true [
-    log CONDUCTOR REPLAY SKIP [ get action ]
     set should-execute value false
    ]
   ]
@@ -32,10 +31,8 @@ set dispatch [
   get should-execute value, true [
    set handler [ get registry [ get action ] ]
    get handler, false [
-    log CONDUCTOR WARNING NO MATCH FOR [ get action ]
-   ], true [ 
-    log CONDUCTOR DISPATCH [ get action ]
-    
+    value undefined
+   ], true [
     # Forward to event hook if set and not in replay mode; store return so handlers can read log entry (e.g. id)
     get replay-mode active, false [
      get event-hook callback, true [
@@ -53,7 +50,6 @@ set dispatch [
 set register [
  function name callback [
   set registry [ get name ] [ get callback ]
-  log CONDUCTOR REGISTERED [ get name ]
  ]
 ]
 

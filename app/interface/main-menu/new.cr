@@ -10,6 +10,10 @@ get new-menu add, call 'Document' [
  get conductor dispatch, will '!document:new'
 ]
 
+get new-menu add, call 'Script' [
+ get conductor dispatch, will '!script:new'
+]
+
 get new-menu add, call 'Session' [
  function item event [
   get main session-service create-session, call
