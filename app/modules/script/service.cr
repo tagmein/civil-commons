@@ -68,20 +68,23 @@ set fetch-script [ function script-id [
 
 set create-script [ function [
  set session-id [ get get-session-id, call ]
- set result-ref [ object [ script null ] ]
+ set result-ref [ object [ val null ] ]
  get session-id, true [
   try [
-   set result-ref script [
+   set result-ref val [
     global fetch, call [ template '/api/sessions/%0/scripts' [ get session-id ] ] [
      object [ method 'POST' ]
     ]
     at json, call
    ]
   ] [
-   value undefined
+   # Failed to create
   ]
  ]
- get result-ref script
+ get result-ref val, true [
+  global window dispatchEvent, call [ global Event, new 'recent-refresh' ]
+ ]
+ get result-ref val
 ] ]
 
 set rename-script [ function script-id new-name [

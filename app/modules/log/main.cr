@@ -237,12 +237,11 @@ get conductor register, call log:open [
   ]
   get content classList add, call log-content
 
+  set inner-container-ref [ object [ el null ] ]
+
   # Function to render the log
   set render-log [ function [
-   # Preserve scroll position across re-render
-   set saved-scroll [ get content scrollTop ]
-
-   set content innerHTML ''
+   set new-inner [ global document createElement, call div ]
 
    set log [ get session-service get-event-log, call ]
 
@@ -253,7 +252,7 @@ get conductor register, call log:open [
     ]
     get empty-msg classList add, call log-empty
     set empty-msg textContent 'No events logged yet'
-    get content appendChild, call [ get empty-msg ]
+    get new-inner appendChild, call [ get empty-msg ]
    ], false [
     # Render each event
     set index-ref [ object [ i 0 ] ]
@@ -282,8 +281,12 @@ get conductor register, call log:open [
       set action-el textContent [ get event action ]
       get info appendChild, call [ get action-el ]
 
-      # For document:open show document name and id (prefer current name from API so renames and list names show correctly)
-      get event action, is 'document:open', true [
+      # For document:open and document:rename show document name and id (prefer current name from API so renames and list names show correctly)
+      set is-doc-action [ get event action, is 'document:open' ]
+      get is-doc-action, false [
+       set is-doc-action [ get event action, is 'document:rename' ]
+      ]
+      get is-doc-action, true [
        get event arg, true [
         set detail-el [ global document createElement, call div ]
         get detail-el classList add, call log-event-detail
@@ -302,8 +305,12 @@ get conductor register, call log:open [
        ]
       ]
 
-      # For value:open show value name and id
-      get event action, is 'value:open', true [
+      # For value:open and value:rename show value name and id
+      set is-val-action [ get event action, is 'value:open' ]
+      get is-val-action, false [
+       set is-val-action [ get event action, is 'value:rename' ]
+      ]
+      get is-val-action, true [
        get event arg, true [
         set detail-el [ global document createElement, call div ]
         get detail-el classList add, call log-event-detail
@@ -452,7 +459,7 @@ get conductor register, call log:open [
       get event-el appendChild, call [ get delete-btn ]
 
       # Minimized tag (for window-opening events only); show below everything; click to remove
-      set window-opening-actions [ list 'document:open' 'mail:open' 'contacts:open' 'session:recent' 'document:recent' 'commons:about' 'commons:preferences' 'document:rename' 'script:open' 'script:rename' 'script:run' 'log:open' ]
+      set window-opening-actions [ list 'document:open' 'mail:open' 'contacts:open' 'session:recent' 'session:rename' 'document:recent' 'commons:about' 'commons:preferences' 'document:rename' 'script:open' 'script:rename' 'script:run' 'value:open' 'value:rename' 'value:recent' 'dictionary:open' 'dictionary:rename' 'log:open' ]
       set is-window-opening [ get window-opening-actions indexOf, call [ get event action ], >= 0 ]
       set tags-row-ref [ object [ row null ] ]
       set ensure-tags-row [
@@ -503,14 +510,20 @@ get conductor register, call log:open [
        ]
       ]
 
-      get content appendChild, call [ get event-el ]
+      get new-inner appendChild, call [ get event-el ]
 
       set index-ref i [ get current-index, add 1 ]
      ]
     ]
    ]
 
-   set content scrollTop [ get saved-scroll ]
+   get inner-container-ref el, true [
+    get content insertBefore, call [ get new-inner ] [ get inner-container-ref el ]
+    get inner-container-ref el remove, call
+   ], false [
+    get content appendChild, call [ get new-inner ]
+   ]
+   set inner-container-ref el [ get new-inner ]
   ] ]
 
   # Initial render

@@ -28,6 +28,53 @@ tell '.document-textarea' [
  ]
 ]
 
+tell '.document-preview' [
+ object [
+  background-color '#1e1e22'
+  border none
+  color '#e0e0d0'
+  flex 1
+  font-family 'Adwaita Sans', 'Noto Sans', sans-serif
+  font-size 15px
+  line-height 1.6
+  padding 16px
+  overflow-y auto
+  display none
+ ]
+]
+
+tell '.document-preview h1, .document-preview h2, .document-preview h3, .document-preview h4, .document-preview h5, .document-preview h6' [
+ object [
+  margin-top 0
+  margin-bottom 16px
+ ]
+]
+
+tell '.document-preview p' [
+ object [
+  margin-top 0
+  margin-bottom 16px
+ ]
+]
+
+tell '.document-preview pre' [
+ object [
+  background-color '#000000'
+  padding 12px
+  border-radius 4px
+  overflow-x auto
+ ]
+]
+
+tell '.document-preview code' [
+ object [
+  font-family 'Consolas, Monaco, monospace'
+  background-color '#000000'
+  padding '2px 4px'
+  border-radius 3px
+ ]
+]
+
 tell '.document-textarea:focus' [
  object [
   background-color '#222226'
@@ -53,6 +100,25 @@ tell '.document-status-id' [
   color '#606070'
   font-size 11px
   margin-left 8px
+ ]
+]
+
+tell '.document-mode-select' [
+ object [
+  background-color '#1e1e22'
+  border '1px solid #444448'
+  border-radius 3px
+  color '#e0e0d0'
+  font-size 11px
+  outline none
+  padding '1px 4px'
+  cursor pointer
+ ]
+]
+
+tell '.document-mode-select:hover' [
+ object [
+  border-color '#606070'
  ]
 ]
 
@@ -121,7 +187,14 @@ set open-document-window [ function doc-id [
  set textarea placeholder 'Start typing...'
  get content appendChild, call [ get textarea ]
 
- # Create status bar (left: status text, right: document id)
+ # Create preview container
+ set preview [
+  global document createElement, call div
+ ]
+ get preview classList add, call document-preview
+ get content appendChild, call [ get preview ]
+
+ # Create status bar (left: status text, center: mode select, right: document id)
  set status [
   global document createElement, call div
  ]
@@ -131,6 +204,96 @@ set open-document-window [ function doc-id [
  ]
  set status-left textContent 'Ready'
  get status appendChild, call [ get status-left ]
+
+ # View Mode Select (Source / Preview)
+ set view-mode-select [
+  global document createElement, call select
+ ]
+ get view-mode-select classList add, call document-mode-select
+ set view-modes [ list Source Preview ]
+ get view-modes, each [
+  function mode [
+   set opt [ global document createElement, call option ]
+   set opt value [ get mode ]
+   set opt textContent [ get mode ]
+   get view-mode-select appendChild, call [ get opt ]
+  ]
+ ]
+ set view-mode-select value [ get doc markdownViewMode, default 'Source' ]
+ get status appendChild, call [ get view-mode-select ]
+
+ get view-mode-select addEventListener, call change [
+  function [
+   # Update view
+   get update-visibility, call
+   
+   set status-left textContent 'Saving view mode...'
+   set result [ get doc-service save-document-markdown-view-mode, call [ get doc-id ] [ get view-mode-select value ] ]
+   get result, true [
+    set status-left textContent 'Saved view mode'
+   ], false [
+    set status-left textContent 'Error saving view mode'
+   ]
+  ]
+ ]
+
+ # Mode Select
+ set mode-select [
+  global document createElement, call select
+ ]
+ get mode-select classList add, call document-mode-select
+ set modes [ list CSV JSON Markdown 'Plain Text' YAML ]
+ get modes, each [
+  function mode [
+   set opt [ global document createElement, call option ]
+   set opt value [ get mode ]
+   set opt textContent [ get mode ]
+   get mode-select appendChild, call [ get opt ]
+  ]
+ ]
+ # Default to document mode or Plain Text
+ set mode-select value [ get doc mode, default 'Plain Text' ]
+ get status appendChild, call [ get mode-select ]
+
+ set update-visibility [ function [
+  set is-markdown [ get mode-select value, is 'Markdown' ]
+  
+  get is-markdown, true [
+   get view-mode-select style display 'inline-block'
+   
+   set is-preview [ get view-mode-select value, is 'Preview' ]
+   get is-preview, true [
+    get textarea style display 'none'
+    get preview style display 'block'
+    get lib markdown, call [ get preview ] [ get textarea value ]
+   ], false [
+    get textarea style display 'block'
+    get preview style display 'none'
+   ]
+  ], false [
+   get view-mode-select style display 'none'
+   get textarea style display 'block'
+   get preview style display 'none'
+  ]
+ ] ]
+
+ # Initial visibility
+ get update-visibility, call
+
+ get mode-select addEventListener, call change [
+  function [
+   get update-visibility, call
+   
+   set status-left textContent 'Saving mode...'
+   set result [ get doc-service save-document-mode, call [ get doc-id ] [ get mode-select value ] ]
+   get result, true [
+    set status-left textContent 'Saved mode'
+   ], false [
+    set status-left textContent 'Error saving mode'
+   ]
+  ]
+ ]
+
  set status-id [
   global document createElement, call span
  ]

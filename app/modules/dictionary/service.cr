@@ -55,10 +55,10 @@ set fetch-dictionary [ function dict-id [
 
 set create-dictionary [ function [
  set session-id [ get get-session-id, call ]
- set result-ref [ object [ dict null ] ]
+ set result-ref [ object [ val null ] ]
  get session-id, true [
   try [
-   set result-ref dict [
+   set result-ref val [
     global fetch, call [ template '/api/sessions/%0/dictionaries' [ get session-id ] ] [
      object [ method 'POST' ]
     ]
@@ -68,7 +68,10 @@ set create-dictionary [ function [
    # Failed to create
   ]
  ]
- get result-ref dict
+ get result-ref val, true [
+  global window dispatchEvent, call [ global Event, new 'recent-refresh' ]
+ ]
+ get result-ref val
 ] ]
 
 set rename-dictionary [ function dict-id new-name [

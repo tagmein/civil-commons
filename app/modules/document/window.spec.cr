@@ -79,6 +79,51 @@ get describe, call 'Document Window Module' [
       get expect, call [ get to-equal ] [ get status textContent ] 'Ready'
      ]
     ]
+
+    get it, call 'should create mode select with correct options' [
+     function [
+      set select [ get harness create-element, call select ]
+      get select classList add, call document-mode-select
+      
+      set modes [ list CSV JSON Markdown 'Plain Text' YAML ]
+      get modes, each [
+       function mode [
+        set opt [ get harness create-element, call option ]
+        set opt value [ get mode ]
+        get select appendChild, call [ get opt ]
+       ]
+      ]
+      
+      get expect, call [ get to-equal ] [ get select children length ] 5
+      get expect, call [ get to-be-true ] [ get select classList contains, call 'document-mode-select' ]
+     ]
+    ]
+
+    get it, call 'should create preview container' [
+     function [
+      set preview [ get harness create-element, call div ]
+      get preview classList add, call document-preview
+      get expect, call [ get to-be-true ] [ get preview classList contains, call 'document-preview' ]
+     ]
+    ]
+
+    get it, call 'should create view mode select' [
+     function [
+      set select [ get harness create-element, call select ]
+      get select classList add, call document-mode-select
+      
+      set modes [ list Source Preview ]
+      get modes, each [
+       function mode [
+        set opt [ get harness create-element, call option ]
+        set opt value [ get mode ]
+        get select appendChild, call [ get opt ]
+       ]
+      ]
+      
+      get expect, call [ get to-equal ] [ get select children length ] 2
+     ]
+    ]
    ]
   ]
   

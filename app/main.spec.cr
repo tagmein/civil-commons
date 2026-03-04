@@ -66,8 +66,15 @@ get describe, call 'main application' [
     
     get it, call 'should load svg-icon lib' [
      function [
-      set lib-parts [ list 'bounds' 'drag-handler' 'style-tag' 'svg-icon' ]
+      set lib-parts [ list 'bounds' 'drag-handler' 'style-tag' 'svg-icon' 'markdown' ]
       get expect, call [ get to-contain ] [ get lib-parts, at 3 ] 'svg-icon'
+     ]
+    ]
+    
+    get it, call 'should load markdown lib' [
+     function [
+      set lib-parts [ list 'bounds' 'drag-handler' 'style-tag' 'svg-icon' 'markdown' ]
+      get expect, call [ get to-contain ] [ get lib-parts, at 4 ] 'markdown'
      ]
     ]
    ]

@@ -61,6 +61,11 @@ function [
      get component window-registry [ get key ]
     ]
    ]
+   get-window-count [
+    function [
+     get component windows length
+    ]
+   ]
    # Viewport position in virtual stage coordinates
    viewportX 0
    viewportY 0

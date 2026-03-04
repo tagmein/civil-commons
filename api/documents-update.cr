@@ -16,43 +16,49 @@ function request respond session-id doc-id body [
  ]
  
  get found value, true [
-  # Update metadata fields if provided
-  get body name, true [
-   set metadata name [ get body name ]
+ # Update metadata fields if provided
+ get body name, true [
+ set metadata name [ get body name ]
+ ]
+ get body archived, true [
+ set metadata archived [ get body archived ]
+ ]
+ get body mode, true [
+ set metadata mode [ get body mode ]
+ ]
+ get body markdownViewMode, true [
+ set metadata markdownViewMode [ get body markdownViewMode ]
+ ]
+
+ # Save updated metadata
+ get oj, call [ get metadata-file ] [ get metadata ]
+
+ # Update content if provided
+ get body content, true [
+ get o, call [ get content-file ] [ get body content ]
+ ]
+
+ # Read current content for response
+ set content-ref [ object [ content '' ] ]
+ try [
+ set content-ref content [ get i, call [ get content-file ] ]
+ ] [
+ # Content file doesn't exist
+ ]
+
+ get respond, call 200 [
+ global JSON stringify, call [
+  object [
+   id [ get doc-id ]
+   name [ get metadata name ]
+   archived [ get metadata archived ]
+   mode [ get metadata mode, default 'Plain Text' ]
+   markdownViewMode [ get metadata markdownViewMode, default 'Source' ]
+   createdAt [ get metadata createdAt ]
+   content [ get content-ref content ]
   ]
-  get body archived, true [
-   set metadata archived [ get body archived ]
-  ]
-  
-  # Save updated metadata
-  get oj, call [ get metadata-file ] [ get metadata ]
-  
-  # Update content if provided
-  get body content, true [
-   get o, call [ get content-file ] [ get body content ]
-  ]
-  
-  # Read current content for response
-  set content-ref [ object [ content '' ] ]
-  try [
-   set content-ref content [ get i, call [ get content-file ] ]
-  ] [
-   # Content file doesn't exist
-  ]
-  
-  get respond, call 200 [
-   global JSON stringify, call [
-    object [
-     id [ get doc-id ]
-     name [ get metadata name ]
-     archived [ get metadata archived ]
-     createdAt [ get metadata createdAt ]
-     content [ get content-ref content ]
-    ]
-   ]
-  ] application/json
- ], false [
-  get respond, call 404 [
+ ]
+ ] application/json ], false [  get respond, call 404 [
    global JSON stringify, call [
     object [ error 'Document not found' ]
    ]

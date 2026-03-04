@@ -227,13 +227,7 @@ get conductor register, call document:recent [
      global document createElement, call div
     ]
     get empty classList add, call recent-doc-empty
-    set empty textContent [
-     get show-archived, true [
-      value 'No archived documents'
-     ], false [
-      value 'No active documents'
-     ]
-    ]
+    set empty textContent 'No results'
     get list-container appendChild, call [ get empty ]
    ], false [
     get documents, each [

@@ -10,6 +10,10 @@ get recent add, call 'Documents' [
  get conductor dispatch, will recent:documents
 ]
 
+get recent add, call 'Dictionaries' [
+ get conductor dispatch, will recent:dictionaries
+]
+
 get recent add, call 'Sessions' [
  get conductor dispatch, will recent:sessions
 ]

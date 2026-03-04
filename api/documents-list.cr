@@ -25,6 +25,8 @@ function request respond session-id [
       id [ get id ]
       name [ get metadata name ]
       archived [ get metadata archived ]
+      mode [ get metadata mode, default 'Plain Text' ]
+      markdownViewMode [ get metadata markdownViewMode, default 'Source' ]
       createdAt [ get metadata createdAt ]
      ]
     ]

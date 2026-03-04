@@ -80,9 +80,11 @@ set create-value [ function [
    # Failed to create
   ]
  ]
+ get result-ref val, true [
+  global window dispatchEvent, call [ global Event, new 'recent-refresh' ]
+ ]
  get result-ref val
 ] ]
-
 set rename-value [ function val-id new-name [
  set session-id [ get get-session-id, call ]
  set result-ref [ object [ val null ] ]

@@ -221,13 +221,7 @@ get conductor register, call value:recent [
    get values length, = 0, true [
     set empty [ global document createElement, call div ]
     get empty classList add, call recent-val-empty
-    set empty textContent [
-     get show-archived, true [
-      value 'No archived values'
-     ], false [
-      value 'No active values'
-     ]
-    ]
+    set empty textContent 'No results'
     get list-container appendChild, call [ get empty ]
    ], false [
     get values, each [

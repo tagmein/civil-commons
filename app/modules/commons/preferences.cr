@@ -1,4 +1,4 @@
-# Preferences modal - tabbed (Windows, etc.) with Log Preferences
+# Preferences modal - tabbed (Windows, Services, etc.)
 
 get lib style-tag
 
@@ -12,7 +12,7 @@ tell '.preferences-content' [
 
 tell '.preferences-tab-content' [
  object [
-  padding-top 16px
+  padding '16px 20px'
  ]
 ]
 
@@ -39,7 +39,7 @@ tell '.preferences-checkbox-label' [
   color '#e0e0d0'
   font-size 14px
  ]
-]
+ ]
 
 tell '.preferences-checkbox' [
  object [
@@ -157,9 +157,8 @@ get conductor register, call commons:preferences [
   set padding-container [
    global document createElement, call div
   ]
-  set padding-container style padding '20px'
 
-  # Tab bar: Windows, General
+  # Tab bar: Windows, General, Services
   set tabs [ get components tab-bar, call ]
 
   set windows-content [
@@ -173,6 +172,12 @@ get conductor register, call commons:preferences [
   ]
   get general-content classList add, call preferences-tab-content
   set general-content style display 'none'
+
+  set services-content [
+   global document createElement, call div
+  ]
+  get services-content classList add, call preferences-tab-content
+  set services-content style display 'none'
 
   # Log Preferences section under Windows
   set log-prefs-section [
@@ -217,18 +222,18 @@ get conductor register, call commons:preferences [
   get log-prefs-section appendChild, call [ get label ]
   get windows-content appendChild, call [ get log-prefs-section ]
 
-  # General tab: Gemini API Key
-  set api-section [
+  # Services tab: Google Gemini AI
+  set gemini-section [
    global document createElement, call div
   ]
-  get api-section classList add, call preferences-section
+  get gemini-section classList add, call preferences-section
 
-  set api-title [
+  set gemini-title [
    global document createElement, call h2
   ]
-  get api-title classList add, call preferences-section-title
-  set api-title textContent 'API'
-  get api-section appendChild, call [ get api-title ]
+  get gemini-title classList add, call preferences-section-title
+  set gemini-title textContent 'Google Gemini AI'
+  get gemini-section appendChild, call [ get gemini-title ]
 
   set api-key-label [
    global document createElement, call label
@@ -299,15 +304,16 @@ get conductor register, call commons:preferences [
   ]
 
   get api-key-wrap appendChild, call [ get visibility-toggle ]
-  get api-section appendChild, call [ get api-key-label ]
-  get api-section appendChild, call [ get api-key-wrap ]
-  get general-content appendChild, call [ get api-section ]
+  get gemini-section appendChild, call [ get api-key-label ]
+  get gemini-section appendChild, call [ get api-key-wrap ]
+  get services-content appendChild, call [ get gemini-section ]
 
   set windows-tab [
    get tabs add, call 'Windows' [
     function tab event [
      set windows-content style display 'block'
      set general-content style display 'none'
+     set services-content style display 'none'
     ]
    ]
   ]
@@ -317,6 +323,17 @@ get conductor register, call commons:preferences [
     function tab event [
      set windows-content style display 'none'
      set general-content style display 'block'
+     set services-content style display 'none'
+    ]
+   ]
+  ]
+
+  set services-tab [
+   get tabs add, call 'Services' [
+    function tab event [
+     set windows-content style display 'none'
+     set general-content style display 'none'
+     set services-content style display 'block'
     ]
    ]
   ]
@@ -324,6 +341,7 @@ get conductor register, call commons:preferences [
   get padding-container appendChild, call [ get tabs element ]
   get padding-container appendChild, call [ get windows-content ]
   get padding-container appendChild, call [ get general-content ]
+  get padding-container appendChild, call [ get services-content ]
   get content appendChild, call [ get padding-container ]
 
   get tabs set-active, call [ get windows-tab ]

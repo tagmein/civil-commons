@@ -25,30 +25,30 @@ get describe, call 'main-menu interface' [
    function [
     get it, call 'should load all menu items' [
      function [
-      set menu-items [ list 'commons' 'document' 'edit' 'file' 'insert' 'layout' 'log' 'page' 'presentation' 'session' 'view' 'window' ]
-      get expect, call [ get to-equal ] [ get menu-items length ] 12
+      set menu-items [ list 'commons' 'file' 'new' 'open' 'recent' 'script' ]
+      get expect, call [ get to-equal ] [ get menu-items length ] 6
      ]
     ]
     
     get it, call 'should include commons menu' [
      function [
-      set menu-items [ list 'commons' 'document' 'edit' 'file' ]
+      set menu-items [ list 'commons' 'file' 'new' 'open' 'recent' 'script' ]
       get expect, call [ get to-contain ] [ get menu-items, at 0 ] 'commons'
      ]
     ]
     
-    get it, call 'should include session menu' [
+    get it, call 'should include file menu' [
      function [
-      set menu-items [ list 'commons' 'document' 'edit' 'file' 'insert' 'layout' 'log' 'page' 'presentation' 'session' 'view' 'window' ]
-      set has-session [ object [ value false ] ]
+      set menu-items [ list 'commons' 'file' 'new' 'open' 'recent' 'script' ]
+      set has-file [ object [ value false ] ]
       get menu-items, each [
        function item [
-        get item, is 'session', true [
-         set has-session value true
+        get item, is 'file', true [
+         set has-file value true
         ]
        ]
       ]
-      get expect, call [ get to-be-true ] [ get has-session value ]
+      get expect, call [ get to-be-true ] [ get has-file value ]
      ]
     ]
    ]

@@ -95,7 +95,7 @@ set open-script-window [ function script-id [
  set textarea [ global document createElement, call textarea ]
  get textarea classList add, call script-textarea
  set textarea value [ get script content, default '' ]
- set textarea placeholder '# Crown script - you have window in scope; use get window content appendChild, call [ get element ] to add content to the Script Output'
+ set textarea placeholder '# Crown script - scope: window, runId, sessionId, platform. Use get platform listDocuments, call [ get sessionId ] to list docs; get window content appendChild, call [ get element ] to add UI. See docs/script-platform-api.md'
  get content appendChild, call [ get textarea ]
 
  set status [ global document createElement, call div ]
@@ -201,7 +201,7 @@ get conductor register, call '!script:new' [
 ]
 
 # Run the last-active script in a new window (window binding available to script)
-# Passes window, runId, sessionId for script-data persistence (runId reused same page load)
+# Passes window, runId, sessionId for script-data persistence (runId persists across page reloads)
 # Arg may be scriptId string, { id: scriptId }, or nothing (use last-interacted). Only proceed when script-id is a string.
 # Use ref so script-id persists (Crown true/false blocks run in cloned scope so set inside them doesn't persist).
 get conductor register, call 'script:run' [
@@ -223,15 +223,7 @@ get conductor register, call 'script:run' [
    set script-id-str [ get script-id, at toString, call ]
    set script [ get script-service fetch-script, call [ get script-id-str ] ]
    get script, true [
-    set entries [ get main script-run-ids ]
-    set matches [ get entries filter, call [ function e [ get e script-id, is [ get script-id-str ] ] ] ]
-    get matches length, > 0, true [
-     set first [ get matches at, call 0 ]
-     set run-id [ get first run-id ]
-    ], false [
-     set run-id [ global crypto randomUUID, call ]
-     get main script-run-ids push, call [ object [ script-id [ get script-id-str ], run-id [ get run-id ] ] ]
-    ]
+    set run-id [ get script-id-str ]
     set session-id [ get main session-service get-current-session-id, call ]
     set run-window [ get components window, call 'Script Output' 400 300 ]
     set run-content [ global document createElement, call div ]
@@ -272,6 +264,7 @@ get conductor register, call 'script:run' [
       window [ get run-window ]
       runId [ get run-id ]
       sessionId [ get session-id ]
+      platform [ get main script-platform ]
      ]
     ] [ get script content, default '' ]
 

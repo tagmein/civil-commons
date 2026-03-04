@@ -29,6 +29,8 @@ function request respond session-id doc-id [
      id [ get doc-id ]
      name [ get metadata name ]
      archived [ get metadata archived ]
+     mode [ get metadata mode, default 'Plain Text' ]
+     markdownViewMode [ get metadata markdownViewMode, default 'Source' ]
      createdAt [ get metadata createdAt ]
      content [ get content-ref content ]
     ]

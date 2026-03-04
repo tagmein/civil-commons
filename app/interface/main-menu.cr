@@ -2,7 +2,7 @@ set main-menu [
  get components action-bar, call
 ]
 
-list commons edit file insert layout new open page presentation recent script view window, each [
+list commons file new open recent script, each [
  function item [
   set menu [
    load [ template ./main-menu/%0.cr [ get item ] ], point

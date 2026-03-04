@@ -18,8 +18,8 @@ get describe, call 'commons menu' [
    function [
     get it, call 'should have About option' [
      function [
-      set items [ list 'About' ]
-      get expect, call [ get to-contain ] [ get items, at 0 ] 'About'
+      set items [ list 'About' 'Preferences' ]
+      get expect, call [ get to-contain ] [ get items ] 'About'
      ]
     ]
     
@@ -40,7 +40,7 @@ get describe, call 'commons menu' [
     ]
    ]
   ]
-  
+
   get describe, call 'return value' [
    function [
     get it, call 'should return commons menu object' [

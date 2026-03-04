@@ -24,4 +24,8 @@ get new-menu add, call 'Value' [
  get conductor dispatch, will '!value:new'
 ]
 
+get new-menu add, call 'AI Content' [
+ get conductor dispatch, will insert:generate-content
+]
+
 get new-menu

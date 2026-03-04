@@ -107,8 +107,6 @@ set fetch-session [ function id [
  global fetch, call [ template '/api/sessions/%0' [ get id ] ]
  at json, call
 ] ]
-
-# Create new session via API
 set create-session [ function [
  set response [
   global fetch, call /api/sessions [
@@ -116,15 +114,17 @@ set create-session [ function [
   ]
  ]
  set session [ get response json, call ]
- 
+
  # Add to open sessions
  set open-ids [ get get-open-session-ids, call ]
  get open-ids push, call [ get session id ]
  get save-open-session-ids, call [ get open-ids ]
- 
+
  # Set as current
  get set-current-session-id, call [ get session id ]
- 
+
+ global window dispatchEvent, call [ global Event, new 'recent-refresh' ]
+
  get emit, call tabsChange [ get open-ids ]
  get session
 ] ]

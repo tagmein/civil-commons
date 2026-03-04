@@ -145,9 +145,7 @@ get conductor register, call dictionary:rename [
   set original-close [ get rename-window close ]
   set rename-window close [ function [
    get rename-window logEntryId, true [
-    get session-service get-preference, call 'skipClosedWindowsOnReplay', true [
-     get session-service mark-event-skipped-on-replay, call [ get rename-window logEntryId ]
-    ]
+    get session-service mark-event-skipped-on-replay, call [ get rename-window logEntryId ]
    ]
    get original-close, call
   ] ]

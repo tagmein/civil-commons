@@ -16,26 +16,32 @@ get describe, call 'New menu' [
    function [
     get it, call 'should have Document option' [
      function [
-      set items [ list 'Document' 'Script' 'Session' 'Value' ]
+      set items [ list 'Document' 'Script' 'Session' 'Value' 'AI Content' ]
       get expect, call [ get to-contain ] [ get items ] 'Document'
      ]
     ]
     get it, call 'should have Script option' [
      function [
-      set items [ list 'Document' 'Script' 'Session' 'Value' ]
+      set items [ list 'Document' 'Script' 'Session' 'Value' 'AI Content' ]
       get expect, call [ get to-contain ] [ get items ] 'Script'
      ]
     ]
     get it, call 'should have Session option' [
      function [
-      set items [ list 'Document' 'Script' 'Session' 'Value' ]
+      set items [ list 'Document' 'Script' 'Session' 'Value' 'AI Content' ]
       get expect, call [ get to-contain ] [ get items ] 'Session'
      ]
     ]
     get it, call 'should have Value option' [
      function [
-      set items [ list 'Document' 'Script' 'Session' 'Value' ]
+      set items [ list 'Document' 'Script' 'Session' 'Value' 'AI Content' ]
       get expect, call [ get to-contain ] [ get items ] 'Value'
+     ]
+    ]
+    get it, call 'should have AI Content option' [
+     function [
+      set items [ list 'Document' 'Script' 'Session' 'Value' 'AI Content' ]
+      get expect, call [ get to-contain ] [ get items ] 'AI Content'
      ]
     ]
    ]

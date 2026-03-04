@@ -78,10 +78,10 @@ set fetch-document [ function doc-id [
 # Create a new document
 set create-document [ function [
  set session-id [ get get-session-id, call ]
- set result-ref [ object [ doc null ] ]
+ set result-ref [ object [ val null ] ]
  get session-id, true [
   try [
-   set result-ref doc [
+   set result-ref val [
     global fetch, call [ template '/api/sessions/%0/documents' [ get session-id ] ] [
      object [ method 'POST' ]
     ]
@@ -91,7 +91,10 @@ set create-document [ function [
    # Failed to create
   ]
  ]
- get result-ref doc
+ get result-ref val, true [
+  global window dispatchEvent, call [ global Event, new 'recent-refresh' ]
+ ]
+ get result-ref val
 ] ]
 
 # Rename a document
@@ -188,6 +191,52 @@ set save-document [ function doc-id content [
  get result-ref doc
 ] ]
 
+# Save document mode
+set save-document-mode [ function doc-id mode [
+ set session-id [ get get-session-id, call ]
+ set result-ref [ object [ doc null ] ]
+ get session-id, true [
+  try [
+   set result-ref doc [
+    global fetch, call [ template '/api/sessions/%0/documents/%1' [ get session-id ] [ get doc-id ] ] [
+     object [
+      method 'PATCH'
+      headers [ object [ Content-Type 'application/json' ] ]
+      body [ global JSON stringify, call [ object [ mode [ get mode ] ] ] ]
+     ]
+    ]
+    at json, call
+   ]
+  ] [
+   # Failed to save mode
+  ]
+ ]
+ get result-ref doc
+] ]
+
+# Save document markdown view mode
+set save-document-markdown-view-mode [ function doc-id markdown-view-mode [
+ set session-id [ get get-session-id, call ]
+ set result-ref [ object [ doc null ] ]
+ get session-id, true [
+  try [
+   set result-ref doc [
+    global fetch, call [ template '/api/sessions/%0/documents/%1' [ get session-id ] [ get doc-id ] ] [
+     object [
+      method 'PATCH'
+      headers [ object [ Content-Type 'application/json' ] ]
+      body [ global JSON stringify, call [ object [ markdownViewMode [ get markdown-view-mode ] ] ] ]
+     ]
+    ]
+    at json, call
+   ]
+  ] [
+   # Failed to save mode
+  ]
+ ]
+ get result-ref doc
+] ]
+
 # Export service object
 object [
  on
@@ -200,4 +249,6 @@ object [
  archive-document
  restore-document
  save-document
+ save-document-mode
+ save-document-markdown-view-mode
 ]

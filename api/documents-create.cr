@@ -14,6 +14,8 @@ function request respond session-id [
   object [
    name 'Untitled Document'
    archived false
+   mode 'Plain Text'
+   markdownViewMode 'Source'
    createdAt [ global Date now, call ]
   ]
  ]
@@ -48,6 +50,8 @@ function request respond session-id [
     id [ get doc-id ]
     name [ get metadata name ]
     archived [ get metadata archived ]
+    mode [ get metadata mode, default 'Plain Text' ]
+    markdownViewMode [ get metadata markdownViewMode, default 'Source' ]
     createdAt [ get metadata createdAt ]
    ]
   ]

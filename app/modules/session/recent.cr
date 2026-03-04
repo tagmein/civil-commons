@@ -227,13 +227,7 @@ get conductor register, call session:recent [
      global document createElement, call div
     ]
     get empty classList add, call recent-empty
-    set empty textContent [
-     get show-archived, true [
-      value 'No archived sessions'
-     ], false [
-      value 'No active sessions'
-     ]
-    ]
+    set empty textContent 'No results'
     get list-container appendChild, call [ get empty ]
    ], false [
     get sessions, each [

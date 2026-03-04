@@ -1,5 +1,5 @@
 # Unified Recent Items Window
-# Handles recent:all, recent:documents, recent:sessions, recent:values, recent:scripts
+# Handles recent:all, recent:documents, recent:dictionaries, recent:sessions, recent:values, recent:scripts
 
 get lib style-tag
 
@@ -81,6 +81,13 @@ tell '.recent-items-badge-value' [
  ]
 ]
 
+tell '.recent-items-badge-dictionary' [
+ object [
+  background-color '#5a3a5a'
+  color '#cc88cc'
+ ]
+]
+
 tell '.recent-items-badge-script' [
  object [
   background-color '#3a4a5a'
@@ -159,10 +166,12 @@ set open-recent-window [ function filter-type [
  set session-service [ get main session-service ]
  set doc-service [ get main document-service ]
  set val-service [ get main value-service ]
+ set dict-service [ get main dictionary-service ]
  set script-service [ get main script-service ]
 
  set title-ref [ object [ t 'Recent Items' ] ]
  get filter-type, is documents, true [ set title-ref t 'Recent Documents' ]
+ get filter-type, is dictionaries, true [ set title-ref t 'Recent Dictionaries' ]
  get filter-type, is sessions, true [ set title-ref t 'Recent Sessions' ]
  get filter-type, is values, true [ set title-ref t 'Recent Values' ]
  get filter-type, is scripts, true [ set title-ref t 'Recent Scripts' ]
@@ -204,131 +213,20 @@ set open-recent-window [ function filter-type [
   set recent-window onRestore [ function win [ get session-service set-event-minimized, call [ get win logEntryId ] false ] ]
  ]
 
- # Collect all items with their type tag
- set all-items [ list ]
-
- # Fetch documents (unless filtered to sessions, values, or scripts only)
- get filter-type, is sessions, false [
-  get filter-type, is values, false [
-   get filter-type, is scripts, false [
-    set docs [ get doc-service fetch-all-documents, call ]
-   get docs, each [
-    function doc [
-     get all-items push, call [
-      object [
-       id [ get doc id ]
-       name [ get doc name, default 'Untitled Document' ]
-       kind document
-       archived [ get doc archived ]
-       createdAt [ get doc createdAt ]
-      ]
-      ]
-     ]
-   ]
-  ]
-  ]
- ]
-
- # Fetch sessions (unless filtered to documents, values, or scripts only)
- get filter-type, is documents, false [
-  get filter-type, is values, false [
-   get filter-type, is scripts, false [
-    set sessions [ get session-service fetch-all-sessions, call ]
-   get sessions, each [
-    function s [
-     get all-items push, call [
-      object [
-       id [ get s id ]
-       name [ get s name, default 'Untitled' ]
-       kind session
-       archived [ get s archived ]
-       createdAt [ get s createdAt ]
-      ]
-     ]
-     ]
-   ]
-  ]
-  ]
- ]
-
- # Fetch values (unless filtered to documents, sessions, or scripts only)
- get filter-type, is documents, false [
-  get filter-type, is sessions, false [
-   get filter-type, is scripts, false [
-    set vals [ get val-service fetch-all-values, call ]
-   get vals, each [
-    function v [
-     get all-items push, call [
-      object [
-       id [ get v id ]
-       name [ get v name, default 'Untitled Value' ]
-       kind value
-       archived [ get v archived ]
-       createdAt [ get v createdAt ]
-      ]
-     ]
-    ]
-   ]
-  ]
-  ]
- ]
-
- # Fetch scripts (when filter is scripts or all)
- get filter-type, is scripts, true [
-  set script-list [ get script-service fetch-all-scripts, call ]
-  get script-list, each [
-   function s [
-    get all-items push, call [
-     object [
-      id [ get s id ]
-      name [ get s name, default 'Untitled Script' ]
-      kind script
-      archived [ get s archived, default false ]
-      createdAt [ get s createdAt, default 0 ]
-     ]
-    ]
-   ]
-  ]
- ], false [
-  get filter-type, is all, true [
-   set script-list [ get script-service fetch-all-scripts, call ]
-   get script-list, each [
-    function s [
-     get all-items push, call [
-      object [
-       id [ get s id ]
-       name [ get s name, default 'Untitled Script' ]
-       kind script
-       archived [ get s archived, default false ]
-       createdAt [ get s createdAt, default 0 ]
-      ]
-    ]
-   ]
-  ]
- ]
- ]
-
  set active-items [ list ]
  set archived-items [ list ]
-
- get all-items, each [
-  function item [
-   get item archived, true [
-    get archived-items push, call [ get item ]
-   ], false [
-    get active-items push, call [ get item ]
-   ]
-  ]
- ]
 
  set container [ global document createElement, call div ]
  get container classList add, call recent-items
 
  set tabs [ get components tab-bar, call ]
 
+ set current-tab-state [ object [ archived false ] ]
+
  set active-tab [
   get tabs add, call [ template 'Active (%0)' [ get active-items length ] ] [
    function tab event [
+    set current-tab-state archived false
     get render-list, call [ get active-items ] [ value false ]
    ]
   ]
@@ -337,6 +235,7 @@ set open-recent-window [ function filter-type [
  set archived-tab [
   get tabs add, call [ template 'Archived (%0)' [ get archived-items length ] ] [
    function tab event [
+    set current-tab-state archived true
     get render-list, call [ get archived-items ] [ value true ]
    ]
   ]
@@ -360,13 +259,7 @@ set open-recent-window [ function filter-type [
   get items length, = 0, true [
    set empty [ global document createElement, call div ]
    get empty classList add, call recent-items-empty
-   set empty textContent [
-    get show-archived, true [
-     value 'No archived items'
-    ], false [
-     value 'No active items'
-    ]
-   ]
+   set empty textContent 'No results'
    get list-container appendChild, call [ get empty ]
   ], false [
    get items, each [
@@ -405,6 +298,9 @@ set open-recent-window [ function filter-type [
         get item kind, is value, true [
          get val-service restore-value, call [ get item id ]
         ]
+        get item kind, is dictionary, true [
+         get dict-service restore-dictionary, call [ get item id ]
+        ]
         get item kind, is session, true [
          global fetch, call [ template '/api/sessions/%0' [ get item id ] ] [
           object [
@@ -427,6 +323,9 @@ set open-recent-window [ function filter-type [
        ]
        get item kind, is value, true [
         get conductor dispatch, call value:open [ object [ id [ get item id ], name [ get item name ] ] ]
+       ]
+       get item kind, is dictionary, true [
+        get conductor dispatch, call dictionary:open [ object [ id [ get item id ], name [ get item name ] ] ]
        ]
        get item kind, is script, true [
         get conductor dispatch, call script:open [ object [ id [ get item id ], name [ get item name ] ] ]
@@ -467,6 +366,9 @@ set open-recent-window [ function filter-type [
         ]
         get item kind, is value, true [
          get val-service archive-value, call [ get item id ]
+        ]
+        get item kind, is dictionary, true [
+         get dict-service archive-dictionary, call [ get item id ]
         ]
         get item kind, is script, true [
          get script-service archive-script, call [ get item id ]
@@ -511,6 +413,9 @@ set open-recent-window [ function filter-type [
         get item kind, is value, true [
          get val-service restore-value, call [ get item id ]
         ]
+        get item kind, is dictionary, true [
+         get dict-service restore-dictionary, call [ get item id ]
+        ]
         get item kind, is script, true [
          get script-service restore-script, call [ get item id ]
         ]
@@ -536,7 +441,173 @@ set open-recent-window [ function filter-type [
   ]
  ] ]
 
- get render-list, call [ get active-items ] [ value false ]
+
+ set refresh-data [ function [
+ # Collect all items with their type tag
+ set all-items [ list ]
+
+ # Fetch documents (unless filtered to sessions, values, scripts or dictionaries only)
+ get filter-type, is sessions, false [
+  get filter-type, is values, false [
+   get filter-type, is scripts, false [
+    get filter-type, is dictionaries, false [
+     set docs [ get doc-service fetch-all-documents, call ]
+     get docs, each [
+      function doc [
+       get all-items push, call [
+        object [
+         id [ get doc id ]
+         name [ get doc name, default 'Untitled Document' ]
+         kind document
+         archived [ get doc archived ]
+         createdAt [ get doc createdAt ]
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  ]
+ ]
+
+ # Fetch sessions (unless filtered to documents, values, scripts or dictionaries only)
+ get filter-type, is documents, false [
+  get filter-type, is values, false [
+   get filter-type, is scripts, false [
+    get filter-type, is dictionaries, false [
+     set sessions [ get session-service fetch-all-sessions, call ]
+     get sessions, each [
+      function s [
+       get all-items push, call [
+        object [
+         id [ get s id ]
+         name [ get s name, default 'Untitled' ]
+         kind session
+         archived [ get s archived ]
+         createdAt [ get s createdAt ]
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  ]
+ ]
+
+ # Fetch values (unless filtered to documents, sessions, scripts or dictionaries only)
+ get filter-type, is documents, false [
+  get filter-type, is sessions, false [
+   get filter-type, is scripts, false [
+    get filter-type, is dictionaries, false [
+     set vals [ get val-service fetch-all-values, call ]
+     get vals, each [
+      function v [
+       get all-items push, call [
+        object [
+         id [ get v id ]
+         name [ get v name, default 'Untitled Value' ]
+         kind value
+         archived [ get v archived ]
+         createdAt [ get v createdAt ]
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  ]
+ ]
+
+ # Fetch dictionaries (unless filtered to documents, sessions, values or scripts only)
+ get filter-type, is documents, false [
+  get filter-type, is sessions, false [
+   get filter-type, is values, false [
+    get filter-type, is scripts, false [
+     set dicts [ get dict-service fetch-all-dictionaries, call ]
+     get dicts, each [
+      function d [
+       get all-items push, call [
+        object [
+         id [ get d id ]
+         name [ get d name, default 'Untitled Dictionary' ]
+         kind dictionary
+         archived [ get d archived ]
+         createdAt [ get d createdAt ]
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  ]
+ ]
+
+ # Fetch scripts (when filter is scripts or all)
+ get filter-type, is scripts, true [
+  set script-list [ get script-service fetch-all-scripts, call ]
+  get script-list, each [
+   function s [
+    get all-items push, call [
+     object [
+      id [ get s id ]
+      name [ get s name, default 'Untitled Script' ]
+      kind script
+      archived [ get s archived, default false ]
+      createdAt [ get s createdAt, default 0 ]
+     ]
+    ]
+   ]
+  ]
+ ], false [
+  get filter-type, is all, true [
+   set script-list [ get script-service fetch-all-scripts, call ]
+   get script-list, each [
+    function s [
+     get all-items push, call [
+      object [
+       id [ get s id ]
+       name [ get s name, default 'Untitled Script' ]
+       kind script
+       archived [ get s archived, default false ]
+       createdAt [ get s createdAt, default 0 ]
+      ]
+    ]
+   ]
+  ]
+ ]
+ ]
+
+ get active-items splice, call 0 [ get active-items length ]
+ get archived-items splice, call 0 [ get archived-items length ]
+
+ get all-items, each [
+  function item [
+   get item archived, true [
+    get archived-items push, call [ get item ]
+   ], false [
+    get active-items push, call [ get item ]
+   ]
+  ]
+ ]
+
+  get tabs update-label, call [ get active-tab ] [ template 'Active (%0)' [ get active-items length ] ]
+  get tabs update-label, call [ get archived-tab ] [ template 'Archived (%0)' [ get archived-items length ] ]
+
+  get current-tab-state archived, true [
+   get render-list, call [ get archived-items ] [ value true ]
+  ], false [
+   get render-list, call [ get active-items ] [ value false ]
+  ]
+ ] ]
+
+ get refresh-data, call
+
+ global window addEventListener, call 'recent-refresh' [ get refresh-data ]
+ set final-close [ get recent-window close ]
+ set recent-window close [ function [
+  global window removeEventListener, call 'recent-refresh' [ get refresh-data ]
+  get final-close, call
+ ] ]
 
  get recent-window fill, call [ get container ]
  get main stage place-window, call [
@@ -559,6 +630,12 @@ get conductor register, call recent:all [
 get conductor register, call recent:documents [
  function [
   get open-recent-window, call [ value 'documents' ]
+ ]
+]
+
+get conductor register, call recent:dictionaries [
+ function [
+  get open-recent-window, call [ value 'dictionaries' ]
  ]
 ]
 
