@@ -267,7 +267,6 @@ get conductor register, call 'script:run' [
     ]
 
     get main stage place-window, call [ get run-window ] [ get main status ]
-    log script:run place-window done
     get runScript, call [
      object [
       window [ get run-window ]
@@ -275,7 +274,6 @@ get conductor register, call 'script:run' [
       sessionId [ get session-id ]
      ]
     ] [ get script content, default '' ]
-    log script:run runScript done
 
     set replay-ev [ get conductor getReplayEvent, call ]
     get replay-ev, true [
