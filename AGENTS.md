@@ -9,10 +9,11 @@ The project's application code is written entirely in `crown`. Crown scripts are
 - The `crown` script itself is a Node.js file that implements the parsing and execution environment.
 
 ### Crown Language Quirks and Best Practices:
-- **Variable Scoping**: Be aware that conditional blocks (`true`, `false`) and iteration commands (`each`) execute in *cloned scopes*. Direct `set` operations within these blocks do not affect variables in the parent scope. To mutate parent scope variables, use a mutable object or explicitly `push` to existing list references.
+- **Variable Scoping & Reference Objects**: Be aware that conditional blocks (`true`, `false`) and iteration commands (`each`) execute in *cloned scopes*. Direct `set` operations within these blocks do not affect variables in the parent scope. To mutate parent scope variables from within a conditional or iteration block, you MUST use the **Reference Object Pattern**: create a mutable object in the parent scope (e.g., `set ref [ object [ value false ] ]`) and mutate its properties within the block (e.g., `set ref value true`). This pattern is essential when conditionally parsing or modifying data (like request bodies in the API).
 - **List Definition**: When defining nested lists, direct definition like `list [ [val1] [val2] ]` can cause issues with variable evaluation, potentially storing literal names (e.g., `'get'`) instead of evaluated values. It is safer to construct nested lists explicitly using `push` calls.
 - **`at` Command with JS Prototypes**: For JavaScript prototype methods (e.g., `String.prototype.endsWith`), the `at` command can be unreliable. Prefer `global eval, call` with a wrapper function (e.g., `(s) => s.endsWith(".json")`) for robust execution.
 - **Arithmetic Commands**: Commands like `multiply` and `add` operate on the `currentValue` and additional arguments (e.g., `get value, multiply 10`), they are not methods callable with `at` on numbers.
+- **Looping**: The `loop` command creates a stateful loop that continues as long as the `currentValue` is not `undefined`. To terminate a loop, you must use a command like `drop` (end loop if condition is true) or `keep` (end loop if condition is false) to set the `currentValue` to `undefined`. The implicit variable `it` can be used to refer to the `currentValue` within the loop block.
 - **`-e` flag**: The crown runner can execute code directly from the command line using the `-e` flag. For example: `./crown -e "log hello world"`.
 
 ## Working on this Project

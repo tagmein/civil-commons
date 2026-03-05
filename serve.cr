@@ -561,20 +561,21 @@ set handler [
       get sub-resource, is ai, true [
        get url-parts, at 5, is history, true [
         set handled value true
-        set ai-body [ object ]
-        set needs-body false
-        get request method, is POST, true [ set needs-body true ]
-        get request method, is DELETE, true [ set needs-body true ]
-        get needs-body, true [
+        set ai-ref [ object [ body [ object ] ] ]
+
+        set handle-ai-body [ function [
          set body-text [ get read-body, call [ get request ] ]
          set parsed [ get parse-json-body, call [ get body-text ] ]
-         get parsed data, true [ set ai-body [ get parsed data ] ]
-        ]
-        get api-ai-history, call [ get request ] [ get respond ] [ get session-id ] [ get ai-body ]
+         get parsed data, true [ set ai-ref body [ get parsed data ] ]
+        ] ]
+
+        get request method, is POST, true [ get handle-ai-body, call ]
+        get request method, is DELETE, true [ get handle-ai-body, call ]
+
+        get api-ai-history, call [ get request ] [ get respond ] [ get session-id ] [ get ai-ref body ]
        ]
       ]
      ]
-     
      # Check if this is a log endpoint: /api/sessions/:id/log or /api/sessions/:id/log/:index
      get handled value, false [
       get sub-resource, is log, true [
