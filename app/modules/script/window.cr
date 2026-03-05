@@ -266,8 +266,7 @@ get conductor register, call 'script:run' [
       sessionId [ get session-id ]
       platform [ get main script-platform ]
      ]
-    ] [ get script content, default '' ]
-
+    ] [ get script content, default '' ] [ template '/api/sessions/%0/fs' [ get session-id ] ]
     set replay-ev [ get conductor getReplayEvent, call ]
     get replay-ev, true [
      get replay-ev minimized, true [

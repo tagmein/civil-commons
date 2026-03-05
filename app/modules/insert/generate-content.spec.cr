@@ -87,11 +87,27 @@ get describe, call 'insert/generate-content module' [
      ]
     ]
     
-    get it, call 'should use generate-content-button for buttons' [
+    get it, call 'should use generate-content-result for text result' [
      function [
-      set btn [ get harness create-element, call button ]
-      get btn classList add, call generate-content-button
-      get expect, call [ get to-be-true ] [ get btn classList contains, call 'generate-content-button' ]
+      set div [ get harness create-element, call div ]
+      get div classList add, call generate-content-result
+      get expect, call [ get to-be-true ] [ get div classList contains, call 'generate-content-result' ]
+     ]
+    ]
+
+    get it, call 'should use generate-content-preview for markdown preview' [
+     function [
+      set div [ get harness create-element, call div ]
+      get div classList add, call generate-content-preview
+      get expect, call [ get to-be-true ] [ get div classList contains, call 'generate-content-preview' ]
+     ]
+    ]
+
+    get it, call 'should use generate-content-select for selects' [
+     function [
+      set select [ get harness create-element, call select ]
+      get select classList add, call generate-content-select
+      get expect, call [ get to-be-true ] [ get select classList contains, call 'generate-content-select' ]
      ]
     ]
    ]

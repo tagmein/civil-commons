@@ -23,6 +23,15 @@ get file add, call 'Rename' [
  ]
 ]
 
+get file add, call 'Add to folder' [
+ function item event [
+  set last [ get main last-interacted ]
+  get last type, true [
+   get conductor dispatch, call folder:add-item [ object [ type [ get last type ], id [ get last id ] ] ]
+  ]
+ ]
+]
+
 get file add, call 'Archive session' [
  function item event [
   get conductor dispatch, call session:archive

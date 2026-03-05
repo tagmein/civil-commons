@@ -9,23 +9,38 @@ globalThis.path = path
 
 globalThis.basePath = globalThis.basePath ?? process.cwd()
 
-setTimeout(function () {
- const files = process.argv.length > 2 ? process.argv.slice(2) : ["repl.cr"]
+setTimeout(async function () {
+ const args = process.argv.slice(2)
+ if (args[0] === "-e") {
+  if (args.length < 2) {
+   console.error("crown: -e option requires an argument")
+   process.exit(1)
+  }
+  try {
+   await crown().run(args[1])
+  } catch (e) {
+   console.error(11, "Error in script")
+   console.error(12, e.message)
+   process.exit(1)
+  }
+ } else {
+  const files = args.length > 0 ? args : ["repl.cr"]
 
- Promise.all(
-  files.map(async (file) => {
-   try {
-    await crown().runFile(file)
-   } catch (e) {
-    console.error(11, `Error in ${file}`)
-    console.error(12, e.message)
-    process.exit(1)
-   }
-  }),
- ).catch(async (e) => {
-  console.error(13, e.message)
-  process.exit(1)
- })
+  Promise.all(
+   files.map(async (file) => {
+    try {
+     await crown().runFile(file)
+    } catch (e) {
+     console.error(11, `Error in ${file}`)
+     console.error(12, e.message)
+     process.exit(1)
+    }
+   }),
+  ).catch(async (e) => {
+   console.error(13, e.message)
+   process.exit(1)
+  })
+ }
 })
 
 /* UNIFIED */ let crownId = 0
@@ -711,20 +726,22 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    return currentValue
   },
   async list(...argumentListRaw) {
-   const argumentList = processCrownList(argumentListRaw)
    currentValue = []
-   const definition = argumentList[0]
-   if (Array.isArray(definition)) {
-    for (const [v] of definition) {
-     if (Array.isArray(v)) {
-      const scope = me.clone(undefined, currentBasePath ?? basePath)
-      currentValue.push((await scope.walk(v)).current())
-     } else {
-      currentValue.push(v)
+   for (const arg of argumentListRaw) {
+    const val = uncrown(arg)
+    if (Array.isArray(val)) {
+     for (const statement of val) {
+      if (Array.isArray(statement)) {
+       const scope = me.clone(undefined, currentBasePath ?? basePath)
+       await scope.walk([statement])
+       currentValue.push(scope.current())
+      } else {
+       currentValue.push(statement)
+      }
      }
+    } else {
+     currentValue.push(val)
     }
-   } else {
-    currentValue.push(...argumentList)
    }
    return me
   },
@@ -811,7 +828,9 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    if (typeof currentValue !== "function") {
     throw new Error(`current value must be function, got ${typeof currentValue}`)
    }
-   const finalCrown = await currentValue(me.clone(undefined, nextBasePath))
+   // When pointing to a loaded module, use the directory of that file as the base path for its inner loads
+   const targetBasePath = nextBasePath ?? currentBasePath ?? basePath;
+   const finalCrown = await currentValue(me.clone(undefined, targetBasePath))
    currentValue = finalCrown.current()
    return me
   },
@@ -862,18 +881,20 @@ function crown(context = globalThis, names = new Map(), basePath = globalThis.ba
    const contents = await _fs.readFile(filePath, "utf-8")
    return me.run([contents])
   },
-  async runScript(scopeCrown, sourceCrown) {
+  async runScript(scopeCrown, sourceCrown, basePathCrown) {
    const scope = uncrown(scopeCrown)
    const rawSource = uncrown(sourceCrown)
-   const cloned = me.clone()
+   const runBasePath = basePathCrown ? uncrown(basePathCrown) : undefined
+   const cloned = me.clone(undefined, runBasePath)
    if (scope && typeof scope === "object" && !Array.isArray(scope)) {
     for (const [k, v] of Object.entries(scope)) {
      cloned.set(k, crown().value(v))
     }
    }
    try {
-    const { complete, value } = parse(typeof rawSource === "string" ? rawSource : String(rawSource))
+    const { complete, value, prefix } = parse(typeof rawSource === "string" ? rawSource : String(rawSource))
     if (!complete) {
+     console.error("runScript: unterminated block. Prefix:", prefix, "Raw Source:", rawSource)
      throw new Error("runScript: unterminated block")
     }
     return cloned.walk(value)

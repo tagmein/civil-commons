@@ -2,7 +2,7 @@ set main-menu [
  get components action-bar, call
 ]
 
-list commons file new open recent script, each [
+list commons file new open recent folder script, each [
  function item [
   set menu [
    load [ template ./main-menu/%0.cr [ get item ] ], point

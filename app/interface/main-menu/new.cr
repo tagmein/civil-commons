@@ -10,6 +10,10 @@ get new-menu add, call 'Document' [
  get conductor dispatch, will '!document:new'
 ]
 
+get new-menu add, call 'Folder' [
+ get conductor dispatch, will '!folder:new'
+]
+
 get new-menu add, call 'Script' [
  get conductor dispatch, will '!script:new'
 ]

@@ -175,8 +175,10 @@ get describe, call 'session/recent module' [
    function [
     get it, call 'should remove from active list' [
      function [
-      set active [ list [ object [ id 'a' ] ] [ object [ id 'b' ] ] ]
-      set to-archive [ object [ id 'a' ] ]
+      set session-a [ object [ id 'a' ] ]
+      set session-b [ object [ id 'b' ] ]
+      set active [ list [ get session-a ] [ get session-b ] ]
+      set to-archive [ get session-a ]
       
       set idx [ get active indexOf, call [ get to-archive ] ]
       get idx, >= 0, true [
@@ -216,8 +218,10 @@ get describe, call 'session/recent module' [
    function [
     get it, call 'should remove from archived list' [
      function [
-      set archived [ list [ object [ id 'a' ] ] [ object [ id 'b' ] ] ]
-      set to-restore [ object [ id 'a' ] ]
+      set session-a [ object [ id 'a' ] ]
+      set session-b [ object [ id 'b' ] ]
+      set archived [ list [ get session-a ] [ get session-b ] ]
+      set to-restore [ get session-a ]
       
       set idx [ get archived indexOf, call [ get to-restore ] ]
       get idx, >= 0, true [

@@ -1,4 +1,5 @@
-set ( fs, http ) [ global import, call ( fs/promises, node:http ) ]
+set fs [ global import, call fs/promises ]
+set http [ global import, call node:http ]
 
 set port [ global process env PORT, default 4567 ]
 
@@ -29,6 +30,13 @@ set api-scripts-get [ load ./api/scripts-get.cr, point ]
 set api-scripts-update [ load ./api/scripts-update.cr, point ]
 set api-script-data-get [ load ./api/script-data-get.cr, point ]
 set api-script-data-put [ load ./api/script-data-put.cr, point ]
+
+# Folder and FS API route handlers
+set api-folders-list [ load ./api/folders-list.cr, point ]
+set api-folders-create [ load ./api/folders-create.cr, point ]
+set api-folders-get [ load ./api/folders-get.cr, point ]
+set api-folders-update [ load ./api/folders-update.cr, point ]
+set api-fs-get [ load ./api/fs-get.cr, point ]
 
 # Value API route handlers
 set api-values-list [ load ./api/values-list.cr, point ]
@@ -62,6 +70,9 @@ set api-contacts-list [ load ./api/contacts-list.cr, point ]
 set api-contacts-create [ load ./api/contacts-create.cr, point ]
 set api-contacts-update [ load ./api/contacts-update.cr, point ]
 set api-contacts-delete [ load ./api/contacts-delete.cr, point ]
+
+# AI API route handlers
+set api-ai-history [ load ./api/ai-history.cr, point ]
 
 # Helper to read raw file (without toString for binary files)
 set i-raw [ function x [
@@ -301,6 +312,44 @@ set handler [
       ]
      ]
     ]
+
+    # Check for folders endpoint
+    get handled value, false [
+     get sub-resource, is folders, true [
+      set handled value true
+      get request method, is GET, true [
+       get url-parts, at 5, true [
+        get api-folders-get, call [ get request ] [ get respond ] [ get session-id ] [ get url-parts, at 5 ]
+       ], false [
+        get api-folders-list, call [ get request ] [ get respond ] [ get session-id ]
+       ]
+      ]
+      get request method, is POST, true [
+       get api-folders-create, call [ get request ] [ get respond ] [ get session-id ]
+      ]
+      get request method, is PATCH, true [
+       set body-text [ get read-body, call [ get request ] ]
+       set parsed [ get parse-json-body, call [ get body-text ] ]
+       get parsed error, true [
+        get respond, call 400 [
+         global JSON stringify, call [ object [ error [ get parsed error ] ] ]
+        ] application/json
+       ], false [
+        get api-folders-update, call [ get request ] [ get respond ] [ get session-id ] [ get url-parts, at 5 ] [ get parsed data ]
+       ]
+      ]
+     ]
+    ]
+
+    # Check for fs endpoint
+    get handled value, false [
+     get sub-resource, is fs, true [
+      set handled value true
+      get request method, is GET, true [
+       get api-fs-get, call [ get request ] [ get respond ] [ get session-id ]
+      ]
+     ]
+    ]
      
      # Check for values endpoint: /api/sessions/:id/values
      get handled value, false [
@@ -503,6 +552,25 @@ set handler [
           ]
          ]
         ]
+       ]
+      ]
+     ]
+     
+     # Check for ai history: /api/sessions/:id/ai/history
+     get handled value, false [
+      get sub-resource, is ai, true [
+       get url-parts, at 5, is history, true [
+        set handled value true
+        set ai-body [ object ]
+        set needs-body false
+        get request method, is POST, true [ set needs-body true ]
+        get request method, is DELETE, true [ set needs-body true ]
+        get needs-body, true [
+         set body-text [ get read-body, call [ get request ] ]
+         set parsed [ get parse-json-body, call [ get body-text ] ]
+         get parsed data, true [ set ai-body [ get parsed data ] ]
+        ]
+        get api-ai-history, call [ get request ] [ get respond ] [ get session-id ] [ get ai-body ]
        ]
       ]
      ]

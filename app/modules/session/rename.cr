@@ -123,6 +123,33 @@ get conductor register, call session:rename [
    get components window, call 'Rename Session' 220 350
   ]
 
+  # Attach log entry id so we can mark skipped on replay when window is closed
+  set log-entry [ get conductor getLastLoggedEntry, call ]
+  get log-entry, true [
+   get log-entry id, true [
+    set rename-window logEntryId [ get log-entry id ]
+   ]
+  ]
+  set replay-ev [ get conductor getReplayEvent, call ]
+  get replay-ev, true [
+   get replay-ev id, true [
+    set rename-window logEntryId [ get replay-ev id ]
+   ]
+  ]
+
+  # Override close to mark log entry skipped on replay
+  set original-close [ get rename-window close ]
+  set rename-window close [ function [
+   get rename-window logEntryId, true [
+    get session-service mark-event-skipped-on-replay, call [ get rename-window logEntryId ]
+   ]
+   get original-close, call
+  ] ]
+  get rename-window logEntryId, true [
+   set rename-window onMinimize [ function win [ get session-service set-event-minimized, call [ get win logEntryId ] true ] ]
+   set rename-window onRestore [ function win [ get session-service set-event-minimized, call [ get win logEntryId ] false ] ]
+  ]
+
   # Create form
   set form [
    global document createElement, call div

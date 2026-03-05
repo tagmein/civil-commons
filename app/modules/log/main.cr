@@ -210,6 +210,7 @@ get conductor register, call log:open [
   set mail-service [ get main mail-service ]
   set value-service [ get main value-service ]
   set script-service [ get main script-service ]
+  set dictionary-service [ get main dictionary-service ]
 
   set log-window [
    get components window, call 'Event Log' 400 500
@@ -329,8 +330,15 @@ get conductor register, call log:open [
        ]
       ]
 
-      # For script:open show script name and id
-      get event action, is 'script:open', true [
+      # For script:open, script:rename, and script:run show script name and id
+      set is-script-action [ get event action, is 'script:open' ]
+      get is-script-action, false [
+       set is-script-action [ get event action, is 'script:rename' ]
+      ]
+      get is-script-action, false [
+       set is-script-action [ get event action, is 'script:run' ]
+      ]
+      get is-script-action, true [
        get event arg, true [
         set detail-el [ global document createElement, call div ]
         get detail-el classList add, call log-event-detail
@@ -349,35 +357,39 @@ get conductor register, call log:open [
        ]
       ]
 
-      # For script:rename show script name and id (arg is script id)
-      get event action, is 'script:rename', true [
+      # For session:rename show session name
+      get event action, is 'session:rename', true [
        get event arg, true [
         set detail-el [ global document createElement, call div ]
         get detail-el classList add, call log-event-detail
-        set script-id [ get event arg id, default [ get event arg ] ]
-        set current-script [ get script-service fetch-script, call [ get script-id ] ]
-        set script-name [ get current-script name, default [ get script-id ] ]
-        set detail-el textContent [ template '%0 (id: %1)' [ get script-name ] [ get script-id ] ]
+        set session-id [ get event arg id, default [ get session-service get-current-session-id, call ] ]
+        set session [ get session-service fetch-session, call [ get session-id ] ]
+        set session-name [ get session name, default 'Session' ]
+        set detail-el textContent [ template '%0 (id: %1)' [ get session-name ] [ get session-id ] ]
         get info appendChild, call [ get detail-el ]
        ]
       ]
 
-      # For script:run show script name and id (arg has id)
-      get event action, is 'script:run', true [
+      # For dictionary:open and dictionary:rename show dictionary name and id
+      set is-dict-action [ get event action, is 'dictionary:open' ]
+      get is-dict-action, false [
+       set is-dict-action [ get event action, is 'dictionary:rename' ]
+      ]
+      get is-dict-action, true [
        get event arg, true [
         set detail-el [ global document createElement, call div ]
         get detail-el classList add, call log-event-detail
-        set script-id [ get event arg id, default [ get event arg ] ]
-        set current-script [ get script-service fetch-script, call [ get script-id ] ]
-        set script-name [
-         get current-script name, default [
-          get event arg name, default [ get script-id ]
+        set dict-id [ get event arg id, default [ get event arg ] ]
+        set current-dict [ get dictionary-service fetch-dictionary, call [ get dict-id ] ]
+        set dict-name [
+         get current-dict name, default [
+          get event arg name, default [ get dict-id ]
          ]
         ]
-        get script-name, is [ get script-id ], true [
-         set script-name 'Script'
+        get dict-name, is [ get dict-id ], true [
+         set dict-name 'Dictionary'
         ]
-        set detail-el textContent [ template '%0 (id: %1)' [ get script-name ] [ get script-id ] ]
+        set detail-el textContent [ template '%0 (id: %1)' [ get dict-name ] [ get dict-id ] ]
         get info appendChild, call [ get detail-el ]
        ]
       ]

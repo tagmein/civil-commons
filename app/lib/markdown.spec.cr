@@ -1,6 +1,6 @@
 # Tests for markdown library
 
-set harness [ load ../../../tests/dom-harness.cr, point ]
+set harness [ load ../../tests/dom-harness.cr, point ]
 set render-markdown-to-element [ load ./markdown.cr, point ]
 
 get describe, call 'markdown library' [
@@ -10,7 +10,8 @@ get describe, call 'markdown library' [
     get it, call 'should render headings' [
      function [
       set element [ get harness create-element, call div ]
-      get render-markdown-to-element, call [ get element ] '# Heading 1\n## Heading 2'
+      get render-markdown-to-element, call [ get element ] '# Heading 1
+## Heading 2'
       get expect, call [ get to-contain ] [ get element innerHTML ] '<h1>Heading 1</h1>'
       get expect, call [ get to-contain ] [ get element innerHTML ] '<h2>Heading 2</h2>'
      ]
@@ -43,15 +44,23 @@ get describe, call 'markdown library' [
     get it, call 'should render code blocks' [
      function [
       set element [ get harness create-element, call div ]
-      get render-markdown-to-element, call [ get element ] '```\nline 1\nline 2\n```'
-      get expect, call [ get to-contain ] [ get element innerHTML ] '<pre><code>\nline 1\nline 2\n</code></pre>'
+      get render-markdown-to-element, call [ get element ] '```
+line 1
+line 2
+```'
+      get expect, call [ get to-contain ] [ get element innerHTML ] '<pre><code>
+line 1
+line 2
+</code></pre>'
      ]
     ]
 
     get it, call 'should render line breaks for double newlines' [
      function [
       set element [ get harness create-element, call div ]
-      get render-markdown-to-element, call [ get element ] 'Paragraph 1\n\nParagraph 2'
+      get render-markdown-to-element, call [ get element ] 'Paragraph 1
+
+Paragraph 2'
       get expect, call [ get to-contain ] [ get element innerHTML ] 'Paragraph 1<br><br>Paragraph 2'
      ]
     ]

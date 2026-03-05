@@ -94,6 +94,20 @@ tell '.find-items-badge-dictionary' [
  ]
 ]
 
+tell '.find-items-badge-script' [
+ object [
+  background-color '#3a3a2a'
+  color '#cccc88'
+ ]
+]
+
+tell '.find-items-badge-folder' [
+ object [
+  background-color '#3a4a5a'
+  color '#88aacc'
+ ]
+]
+
 tell '.find-items-date' [
  object [
   color '#808080'
@@ -144,6 +158,8 @@ set ensure-find-window [ function [
  set doc-service [ get main document-service ]
  set val-service [ get main value-service ]
  set dict-service [ get main dictionary-service ]
+ set folder-service [ get main folder-service ]
+ set script-service [ get main script-service ]
 
  set find-window [ get components window, call 'Find Items' 450 500 ]
  set find-window-ref window [ get find-window ]
@@ -153,7 +169,7 @@ set ensure-find-window [ function [
 
  set filter-select [ global document createElement, call select ]
  set filter-select value [ get find-window-ref filter-type ]
- list all dictionary document session value, each [
+ list all dictionary document folder script session value, each [
   function t [
    set opt [ global document createElement, call option ]
    set opt value [ get t ]
@@ -272,6 +288,7 @@ set ensure-find-window [ function [
   get filter-type, is document, false [
    get filter-type, is session, false [
    get filter-type, is value, false [
+   get filter-type, is folder, false [
      set dicts [ get dict-service fetch-all-dictionaries, call ]
      get dicts, each [
       function d [
@@ -280,14 +297,64 @@ set ensure-find-window [ function [
          id [ get d id ]
          name [ get d name, default 'Untitled Dictionary' ]
          kind dictionary
-         archived [ get d archived ]
-         createdAt [ get d createdAt ]
+         date [ get d createdAt ]
         ]
        ]
+      ]
      ]
     ]
    ]
+   ]
   ]
+
+  get filter-type, is document, false [
+   get filter-type, is session, false [
+   get filter-type, is value, false [
+   get filter-type, is dictionary, false [
+   get filter-type, is script, false [
+     set folders [ get folder-service fetch-all-folders, call ]
+     get folders, each [
+      function f [
+       get all-items push, call [
+        object [
+         id [ get f id ]
+         name [ get f name, default 'Untitled Folder' ]
+         kind folder
+         createdAt [ get f createdAt ]
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+   ]
+   ]
+  ]
+
+  get filter-type, is document, false [
+   get filter-type, is session, false [
+   get filter-type, is value, false [
+   get filter-type, is dictionary, false [
+   get filter-type, is folder, false [
+     set scripts [ get script-service fetch-all-scripts, call ]
+     get scripts, each [
+      function s [
+       get s archived, false [
+        get all-items push, call [
+         object [
+          id [ get s id ]
+          name [ get s name, default 'Untitled Script' ]
+          kind script
+          createdAt [ get s createdAt ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+   ]
+   ]
   ]
 
   set filtered [ get all-items, filter [

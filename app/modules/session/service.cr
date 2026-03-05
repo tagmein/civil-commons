@@ -11,9 +11,12 @@ set listeners [ object [
  tabsChange [ list ]
  sessionRenamed [ list ]
  logChanged [ list ]
-] ]
+ ] ]
 
-# Trigger event listeners
+ # Optimistic updates for log events (e.g. skippedOnReplay, minimized) to make UI updates immediate
+ set log-optimistic-updates [ object ]
+
+ # Trigger event listeners
 set emit [ function event-name data [
  get listeners [ get event-name ], each [
   function callback [
@@ -307,9 +310,24 @@ set get-event-log [ function [
  get session-id, true [
   try [
    set response [ global fetch, call [ template '/api/sessions/%0/log' [ get session-id ] ] ]
-   set result-ref log [ get response json, call ]
-  ] [
-   # Failed to fetch log, keep empty
+   set log [ get response json, call ]
+   get log, each [
+    function event [
+     get event id, true [
+      set update [ get log-optimistic-updates [ get event id ] ]
+      get update, true [
+       get update skippedOnReplay, is undefined, false [
+        set event skippedOnReplay [ get update skippedOnReplay ]
+       ]
+       get update minimized, is undefined, false [
+        set event minimized [ get update minimized ]
+       ]
+      ]
+     ]
+    ]
+   ]
+   set result-ref log [ get log ]
+   ] [   # Failed to fetch log, keep empty
   ]
  ]
  get result-ref log
@@ -346,6 +364,12 @@ set set-event-skipped-on-replay [ function event-id value [
  set session-id [ get get-current-session-id, call ]
  get session-id, true [
   get event-id, true [
+   # Optimistic update
+   set update [ get log-optimistic-updates [ get event-id ], default [ object ] ]
+   set update skippedOnReplay [ get value ]
+   set log-optimistic-updates [ get event-id ] [ get update ]
+   get emit, call logChanged null
+
    set response [ global fetch, call [ template '/api/sessions/%0/log/%1' [ get session-id ] [ get event-id ] ] [
     object [
      method 'PATCH'
@@ -378,6 +402,12 @@ set set-event-minimized [ function event-id value [
  set session-id [ get get-current-session-id, call ]
  get session-id, true [
   get event-id, true [
+   # Optimistic update
+   set update [ get log-optimistic-updates [ get event-id ], default [ object ] ]
+   set update minimized [ get value ]
+   set log-optimistic-updates [ get event-id ] [ get update ]
+   get emit, call logChanged null
+
    set response [ global fetch, call [ template '/api/sessions/%0/log/%1' [ get session-id ] [ get event-id ] ] [
     object [
      method 'PATCH'

@@ -1,7 +1,7 @@
 # Tests for app/modules/session/archive.cr
 # Tests session archive confirmation window module
 
-set harness [ load ../../../tests/dom-harness.cr, point ]
+set harness [ load ./tests/dom-harness.cr, point ]
 
 get describe, call 'session/archive module' [
  function [

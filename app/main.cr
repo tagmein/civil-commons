@@ -65,6 +65,11 @@ set main value-service [
  load ./modules/value/service.cr, point
 ]
 
+# Load folder service
+set main folder-service [
+ load ./modules/folder/service.cr, point
+]
+
 # Load dictionary service (needed by dictionary modules)
 set main dictionary-service [
  load ./modules/dictionary/service.cr, point
@@ -103,7 +108,7 @@ list tabs menu stage status startup, each [
  ]
 ]
 
-list commons/about commons/preferences contacts/window log/main mail/window mail/accounts-window mail/sync-window session/rename session/archive session/recent document/window document/window-api document/recent document/rename script/platform-api script/window script/rename value/window value/recent value/rename recent/items find/items dictionary/window dictionary/rename insert/generate-content, each [
+list commons/about commons/preferences contacts/window log/main mail/window mail/accounts-window mail/sync-window session/rename session/archive session/recent document/window document/window-api document/recent document/rename script/platform-api script/window script/rename value/window value/recent value/rename folder/window folder/rename recent/items find/items dictionary/window dictionary/rename insert/generate-content, each [
  function x [
   load [ template ./modules/%0.cr [ get x ] ], point
  ]
